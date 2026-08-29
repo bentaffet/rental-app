@@ -1,0 +1,34 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js",
+    "dev": "node index.js",
+    "check": "find . -path './node_modules' -prune -o -name '*.js' -exec node --check {} \\;",
+    "check:firebase": "node src/scripts/checkFirebaseConfig.js",
+    "migrate:local-to-firestore": "node src/scripts/migrateLocalDatastoreToFirestore.js",
+    "cleanup:listings": "node src/scripts/cleanupListingsCollection.js",
+    "dedupe:listings": "node src/scripts/recomputeListingDedupe.js",
+    "sync:listing-post-dates": "node src/scripts/syncListingPostDates.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "firebase-admin": "^14.3.0",
+    "helmet": "^8.3.0",
+    "morgan": "^1.12.0",
+    "openai": "^7.8.0",
+    "zod": "^4.5.2"
+  }
+}
