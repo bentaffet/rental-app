@@ -44,6 +44,8 @@ npm install
 npm run dev
 ```
 
+For deployment, set `FRONTEND_ORIGIN` to the frontend domain that should be allowed to call the backend.
+
 The template uses `data/local-datastore.json` until Firebase credentials are configured.
 
 ## Firebase Setup

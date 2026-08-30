@@ -2,8 +2,8 @@ const brightDataApiService = require("./brightDataApiService");
 const brightDataImportService = require("./brightDataImportService");
 const brightDataJobModel = require("../models/brightDataJobModel");
 
-async function startJob() {
-  const triggered = await brightDataApiService.triggerSnapshot();
+async function startJob(options = {}) {
+  const triggered = await brightDataApiService.triggerSnapshot(options);
   const now = new Date().toISOString();
 
   const job = {

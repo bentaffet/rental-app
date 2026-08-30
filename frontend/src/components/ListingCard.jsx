@@ -20,6 +20,14 @@ export default function ListingCard({ listing, saved, onToggleSaved }) {
   const imageUrl = listing.imageUrl || listing.image_url;
   const postedAt = listing.postedAt || listing.date_posted || listing.decoded_at;
   const amenities = listing.amenities || [];
+  const location = [
+    listing.neighborhood,
+    listing.borough,
+    listing.city && listing.city !== listing.borough ? listing.city : null,
+    listing.state,
+  ]
+    .filter(Boolean)
+    .join(", ");
   const bedLabel =
     bedrooms === 0
       ? "Studio"
@@ -88,7 +96,7 @@ export default function ListingCard({ listing, saved, onToggleSaved }) {
         <div className="mt-3 grid gap-2 text-sm">
           <div className="flex items-center gap-2">
             <MapPin size={17} className="text-primary" />
-            <span>{[listing.neighborhood, listing.borough].filter(Boolean).join(", ") || "Location unknown"}</span>
+            <span>{location || "Location unknown"}</span>
           </div>
           <div className="flex items-center gap-2">
             <CalendarDays size={17} className="text-primary" />

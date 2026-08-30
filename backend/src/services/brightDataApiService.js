@@ -28,8 +28,21 @@ function ensureBrightDataConfig() {
   return config;
 }
 
-function buildInputs() {
-  return trackedGroups.map((group) => ({
+function buildInputs(options = {}) {
+  const selectedUrls = Array.isArray(options.urls)
+    ? new Set(options.urls.filter(Boolean))
+    : null;
+  const groups = selectedUrls
+    ? trackedGroups.filter((group) => selectedUrls.has(group.url))
+    : trackedGroups;
+
+  if (selectedUrls && groups.length === 0) {
+    const error = new Error("No matching tracked groups selected");
+    error.status = 400;
+    throw error;
+  }
+
+  return groups.map((group) => ({
     url: group.url,
     user_to_not_include: group.user_to_not_include || "",
     num_of_posts: group.num_of_posts || 25,
@@ -63,7 +76,7 @@ async function brightDataFetch(path, options = {}) {
   return body;
 }
 
-async function triggerSnapshot() {
+async function triggerSnapshot(options = {}) {
   const config = ensureBrightDataConfig();
   const params = new URLSearchParams({
     dataset_id: config.datasetId,
@@ -73,13 +86,13 @@ async function triggerSnapshot() {
 
   const body = await brightDataFetch(`/trigger?${params.toString()}`, {
     method: "POST",
-    body: JSON.stringify(buildInputs()),
+    body: JSON.stringify(buildInputs(options)),
   });
 
   return {
     snapshot_id: body.snapshot_id,
     raw: body,
-    inputs: buildInputs(),
+    inputs: buildInputs(options),
   };
 }
 

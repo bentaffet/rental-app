@@ -11,7 +11,7 @@ const defaultFilters = {
   startMonthOnly: false,
   endDate: "",
   endMonthOnly: false,
-  sortBy: "none",
+  sortBy: "posted_desc",
 };
 
 export default function Listings() {

@@ -2,6 +2,8 @@ const listingModel = require("../models/listingModel");
 const rawPostModel = require("../models/rawPostModel");
 const { createListingDraft, decodeRawPost, hasDecodeInput } = require("./listingDecodeService");
 const { buildDedupeKey } = require("./listingDedupeService");
+const { applyListingLifecycle } = require("./listingLifecycleService");
+const { fingerprintPhotoUrls, HASH_VERSION } = require("./imageFingerprintService");
 
 function parseLimit(value) {
   const limit = Number(value || 5);
@@ -28,7 +30,6 @@ async function decodePost(rawPost, options = {}) {
         title: "Empty post",
         summary: null,
         decode_status: "not_listing",
-        red_flags: ["empty content"],
         decoded_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
@@ -59,9 +60,12 @@ async function decodePost(rawPost, options = {}) {
     const decoded = await decodeRawPost(rawPost);
 
     if (decoded.listing.decode_status === "decoded") {
+      const imageHashes = await fingerprintPhotoUrls(decoded.listing.image_urls);
       await listingModel.upsertListing(rawPost.id, {
-        ...decoded.listing,
+        ...applyListingLifecycle(decoded.listing),
         dedupe_key: buildDedupeKey(decoded.listing),
+        image_hash_version: HASH_VERSION,
+        image_hashes: imageHashes,
       });
     } else {
       await listingModel.deleteListing(rawPost.id);

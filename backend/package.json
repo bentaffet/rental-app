@@ -15,6 +15,8 @@
     "migrate:local-to-firestore": "node src/scripts/migrateLocalDatastoreToFirestore.js",
     "cleanup:listings": "node src/scripts/cleanupListingsCollection.js",
     "dedupe:listings": "node src/scripts/recomputeListingDedupe.js",
+    "archive:listings": "node src/scripts/archiveOldListings.js",
+    "repair:locations": "node src/scripts/repairListingLocations.js",
     "sync:listing-post-dates": "node src/scripts/syncListingPostDates.js"
   },
   "keywords": [],
@@ -29,6 +31,7 @@
     "helmet": "^8.3.0",
     "morgan": "^1.12.0",
     "openai": "^7.8.0",
+    "sharp": "^0.35.4",
     "zod": "^4.5.2"
   }
 }

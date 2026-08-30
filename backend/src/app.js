@@ -11,7 +11,13 @@ const openAiRoutes = require("./routes/openAiRoutes");
 const app = express();
 
 app.use(helmet());
-app.use(cors());
+app.use(
+  cors({
+    origin: process.env.FRONTEND_ORIGIN
+      ? process.env.FRONTEND_ORIGIN.split(",").map((origin) => origin.trim())
+      : true,
+  })
+);
 app.use(express.json({ limit: "25mb" }));
 app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
 

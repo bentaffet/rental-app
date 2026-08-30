@@ -1,4 +1,6 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+const API_BASE_URL = (
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:4000"
+).replace(/\/+$/, "");
 
 async function request(path, options = {}) {
   const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -26,6 +28,11 @@ export function getGroupStats() {
   return request("/api/brightdata/groups/stats");
 }
 
+export function getPostTimeline(groupUrl = "") {
+  const query = groupUrl ? `?group_url=${encodeURIComponent(groupUrl)}` : "";
+  return request(`/api/brightdata/groups/timeline${query}`);
+}
+
 export function getListings() {
   return request("/api/listings");
 }
@@ -34,8 +41,11 @@ export function getBrightDataJobs() {
   return request("/api/brightdata/jobs");
 }
 
-export function triggerBrightDataSnapshot() {
-  return request("/api/brightdata/trigger", { method: "POST" });
+export function triggerBrightDataSnapshot(urls = []) {
+  return request("/api/brightdata/trigger", {
+    method: "POST",
+    body: JSON.stringify({ urls }),
+  });
 }
 
 export function getBrightDataSnapshotStatus(snapshotId) {

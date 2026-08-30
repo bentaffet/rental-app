@@ -50,9 +50,17 @@ function sortListings(listings, sortBy) {
     return [...listings].sort((a, b) => priceValue(b) - priceValue(a));
   }
 
+  if (sortBy === "posted_desc") {
+    return [...listings].sort((a, b) => postedValue(b) - postedValue(a));
+  }
+
   return listings;
 }
 
 function priceValue(listing) {
   return Number.isFinite(listing.price) ? listing.price : Number.POSITIVE_INFINITY;
+}
+
+function postedValue(listing) {
+  return new Date(listing.postedAt || listing.date_posted || 0).getTime();
 }

@@ -12,7 +12,7 @@ export default function Navbar() {
       <div className="page-shell flex h-14 items-center justify-between gap-4">
         <NavLink to="/listings" className="flex items-center gap-2 font-bold text-ink">
           <Home size={20} />
-          <span>LeaseLens</span>
+          <span>RoomUp!</span>
         </NavLink>
 
         <nav className="flex gap-1">

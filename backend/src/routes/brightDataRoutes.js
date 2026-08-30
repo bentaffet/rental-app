@@ -7,6 +7,7 @@ const router = express.Router();
 
 router.get("/groups", brightDataController.listTrackedGroups);
 router.get("/groups/stats", brightDataController.listGroupStats);
+router.get("/groups/timeline", brightDataController.getPostTimeline);
 router.get("/jobs", brightDataController.listJobs);
 router.post("/trigger", brightDataController.triggerSnapshot);
 router.get("/snapshots/:snapshotId/status", brightDataController.getSnapshotStatus);

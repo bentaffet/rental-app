@@ -1,12 +1,19 @@
 const listingModel = require("../models/listingModel");
 const { visibleListingsOnly } = require("./listingDedupeService");
+const { visibleByLifecycle } = require("./listingLifecycleService");
 
 function includesText(value, query) {
   return String(value || "").toLowerCase().includes(query);
 }
 
 async function searchListings(query = {}) {
-  const listings = visibleListingsOnly(await listingModel.listListings());
+  const listings = visibleByLifecycle(
+    visibleListingsOnly(await listingModel.listListings()),
+    {
+      includeStale: query.include_stale === "true",
+      includeArchived: query.include_archived === "true",
+    }
+  );
   const text = String(query.q || "").trim().toLowerCase();
   const maxPrice = query.max_price ? Number(query.max_price) : null;
 

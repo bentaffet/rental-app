@@ -42,9 +42,22 @@ async function listGroupStats(req, res, next) {
   }
 }
 
+async function getPostTimeline(req, res, next) {
+  try {
+    const timeline = await groupStatsService.getPostTimeline({
+      groupUrl: req.query.group_url || null,
+    });
+    res.json({ timeline });
+  } catch (error) {
+    next(error);
+  }
+}
+
 async function triggerSnapshot(req, res, next) {
   try {
-    const job = await brightDataJobService.startJob();
+    const job = await brightDataJobService.startJob({
+      urls: req.body?.urls,
+    });
     res.status(202).json({ job });
   } catch (error) {
     next(error);
@@ -70,6 +83,7 @@ async function importSnapshot(req, res, next) {
 }
 
 module.exports = {
+  getPostTimeline,
   getSnapshotStatus,
   importSnapshot,
   listJobs,

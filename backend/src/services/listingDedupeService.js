@@ -29,6 +29,32 @@ function normalizeBedsBaths(value) {
   return Number.isFinite(value) ? String(value) : "unknown";
 }
 
+function normalizeImageIdentity(value) {
+  if (!value) {
+    return "";
+  }
+
+  try {
+    const url = new URL(value);
+    const hostname = url.hostname.toLowerCase();
+    const filename = decodeURIComponent(url.pathname.split("/").filter(Boolean).pop() || "")
+      .toLowerCase()
+      .replace(/\.(?:avif|gif|jpe?g|png|webp)$/i, "");
+
+    // Facebook changes CDN hostnames and delivery parameters for the same media asset.
+    if (
+      filename &&
+      (hostname.endsWith("fbcdn.net") || hostname.endsWith("cdninstagram.com"))
+    ) {
+      return `meta-media:${filename}`;
+    }
+
+    return `${hostname}${url.pathname}`.replace(/\/+$/, "").toLowerCase();
+  } catch {
+    return normalizeText(value);
+  }
+}
+
 function roomTypeKey(listing) {
   const roomType = normalizeText(listing.room_type || "");
 
@@ -47,26 +73,22 @@ function roomTypeKey(listing) {
   return roomType || "unknown";
 }
 
-function transitKey(listing) {
-  const transit = (listing.transit || []).map(normalizeText).join(" ");
+function textLocationKey(listing) {
+  const text = normalizeText([listing.title, listing.summary].filter(Boolean).join(" "));
 
-  if (/kings?\s*highway/.test(transit)) {
-    return "kings-highway";
+  if (/\bhoboken\b/.test(text)) {
+    return "hoboken";
   }
 
-  return transit.split(" ").filter(Boolean).slice(0, 4).join("-");
+  return "";
 }
 
 function locationKey(listing) {
-  const locationText = [
-    listing.neighborhood,
-    listing.borough,
-    listing.city,
-    transitKey(listing),
-  ]
+  const primaryLocation = [listing.neighborhood, listing.borough, listing.city]
     .map(normalizeText)
     .filter(Boolean)
     .join(" ");
+  const locationText = primaryLocation || textLocationKey(listing);
 
   if (/kings?\s*highway/.test(locationText) && /brooklyn/.test(locationText)) {
     return "kings-highway-brooklyn";
@@ -89,6 +111,28 @@ function buildDedupeKey(listing) {
     .join("__");
 }
 
+function buildImageDedupeKeys(listing) {
+  const imageUrls = [listing.image_url, ...(listing.image_urls || [])].filter(Boolean);
+
+  return Array.from(new Set(imageUrls.map(normalizeImageIdentity).filter(Boolean))).map(
+    (imageIdentity) => `image__${imageIdentity}`
+  );
+}
+
+function buildVisualDedupeKeys(listing) {
+  return Array.from(new Set((listing.image_hashes || []).filter(Boolean))).map(
+    (imageHash) => `visual__${imageHash}`
+  );
+}
+
+function buildDedupeKeys(listing) {
+  return [
+    buildDedupeKey(listing),
+    ...buildImageDedupeKeys(listing),
+    ...buildVisualDedupeKeys(listing),
+  ].filter(Boolean);
+}
+
 function listingScore(listing) {
   let score = 0;
 
@@ -98,8 +142,6 @@ function listingScore(listing) {
   if (listing.neighborhood) score += 2;
   if (listing.summary) score += 1;
   score += Math.min((listing.amenities || []).length, 5);
-  score += Math.min((listing.transit || []).length, 3);
-  score += Number(listing.confidence || 0) * 4;
 
   return score;
 }
@@ -113,16 +155,60 @@ function chooseCanonical(listings) {
 }
 
 function applyDedupeState(listings) {
+  const parent = new Map();
   const groups = new Map();
 
+  function find(id) {
+    const currentParent = parent.get(id) || id;
+
+    if (currentParent === id) {
+      return id;
+    }
+
+    const root = find(currentParent);
+    parent.set(id, root);
+    return root;
+  }
+
+  function union(a, b) {
+    const rootA = find(a);
+    const rootB = find(b);
+
+    if (rootA !== rootB) {
+      parent.set(rootB, rootA);
+    }
+  }
+
   for (const listing of listings) {
+    parent.set(listing.id, listing.id);
+  }
+
+  for (const listing of listings) {
+    for (const dedupeKey of buildDedupeKeys(listing)) {
+      const matchingListingId = groups.get(dedupeKey);
+
+      if (matchingListingId) {
+        union(matchingListingId, listing.id);
+      } else {
+        groups.set(dedupeKey, listing.id);
+      }
+    }
+  }
+
+  const groupedListings = new Map();
+
+  for (const listing of listings) {
+    const root = find(listing.id);
     const dedupeKey = buildDedupeKey(listing);
-    groups.set(dedupeKey, [...(groups.get(dedupeKey) || []), { ...listing, dedupe_key: dedupeKey }]);
+    groupedListings.set(root, [
+      ...(groupedListings.get(root) || []),
+      { ...listing, dedupe_key: dedupeKey },
+    ]);
   }
 
   const updated = [];
 
-  for (const [dedupeKey, group] of groups.entries()) {
+  for (const group of groupedListings.values()) {
     const canonical = chooseCanonical(group);
     const duplicateIds = group
       .map((listing) => listing.id)
@@ -131,7 +217,7 @@ function applyDedupeState(listings) {
     for (const listing of group) {
       updated.push({
         ...listing,
-        dedupe_key: dedupeKey,
+        dedupe_key: canonical.dedupe_key,
         canonical_listing_id: canonical.id,
         is_duplicate: listing.id !== canonical.id,
         duplicate_listing_ids: listing.id === canonical.id ? duplicateIds : [],
@@ -144,7 +230,8 @@ function applyDedupeState(listings) {
 }
 
 function visibleListingsOnly(listings) {
-  return applyDedupeState(listings).filter((listing) => !listing.is_duplicate);
+  const persistedCanonicalListings = listings.filter((listing) => !listing.is_duplicate);
+  return applyDedupeState(persistedCanonicalListings).filter((listing) => !listing.is_duplicate);
 }
 
 module.exports = {

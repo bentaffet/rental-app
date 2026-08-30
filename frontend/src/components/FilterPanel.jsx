@@ -96,6 +96,7 @@ export default function FilterPanel({ filters, onChange }) {
           onChange={(event) => setFilter("sortBy", event.target.value)}
         >
           <option value="none">Recommended</option>
+          <option value="posted_desc">Newest posted</option>
           <option value="price_asc">Price low to high</option>
           <option value="price_desc">Price high to low</option>
         </select>
