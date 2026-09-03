@@ -107,7 +107,7 @@ function matchesGroupUrl(post, groupUrl) {
 }
 
 async function getGroupStats() {
-  const groups = brightDataApiService.buildInputs();
+  const groups = await brightDataApiService.buildInputs();
   const statsByUrl = new Map(
     groups.map((group) => [normalizeGroupUrl(group.url), emptyStats(group)])
   );

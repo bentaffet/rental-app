@@ -29,7 +29,7 @@ function readLocalData() {
   }
 
   if (!fs.existsSync(localDataPath)) {
-    localCache = { brightdata_jobs: {}, raw_posts: {}, listings: {} };
+    localCache = { brightdata_jobs: {}, raw_posts: {}, listings: {}, tracked_groups: {} };
     return localCache;
   }
 

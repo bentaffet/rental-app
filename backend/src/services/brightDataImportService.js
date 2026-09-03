@@ -50,7 +50,15 @@ function buildRawPostId(post) {
   return `${groupId}_${postId}`;
 }
 
-async function importBrightDataPayload(payload) {
+function nextDecodeStatus(existing) {
+  if (["decoded", "not_listing"].includes(existing?.decoded_status)) {
+    return existing.decoded_status;
+  }
+
+  return "pending";
+}
+
+async function importBrightDataPayload(payload, options = {}) {
   const records = getRecords(payload);
   const summary = {
     received: records.length,
@@ -58,6 +66,8 @@ async function importBrightDataPayload(payload) {
     updated: 0,
     skipped: 0,
     decodeQueued: 0,
+    rawPostIds: [],
+    decodeQueuedIds: [],
     errors: [],
   };
 
@@ -81,6 +91,7 @@ async function importBrightDataPayload(payload) {
     });
 
     const existing = await rawPostModel.getRawPost(id);
+    summary.rawPostIds.push(id);
 
     if (existing?.content_hash === contentHash) {
       summary.skipped += 1;
@@ -100,7 +111,9 @@ async function importBrightDataPayload(payload) {
       author_name: post.user_username_raw || null,
       raw_payload: post,
       content_hash: contentHash,
-      decoded_status: "pending",
+      decoded_status: nextDecodeStatus(existing),
+      source_snapshot_id: existing?.source_snapshot_id || options.snapshotId || null,
+      latest_snapshot_id: options.snapshotId || existing?.latest_snapshot_id || null,
       imported_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
@@ -113,7 +126,10 @@ async function importBrightDataPayload(payload) {
       summary.imported += 1;
     }
 
-    summary.decodeQueued += 1;
+    if (rawPost.decoded_status === "pending") {
+      summary.decodeQueued += 1;
+      summary.decodeQueuedIds.push(id);
+    }
   }
 
   return summary;

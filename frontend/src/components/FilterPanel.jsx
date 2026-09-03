@@ -7,7 +7,7 @@ export default function FilterPanel({ filters, onChange }) {
 
   return (
     <section className="rounded border border-base-300 bg-base-100 p-3">
-      <div className="grid gap-3 lg:grid-cols-[1fr_1.2fr_1.2fr_1.1fr]">
+      <div className="grid gap-3 lg:grid-cols-[1fr_1.1fr_1.1fr_1.1fr_1.2fr]">
         <label className="form-control">
           <span className="label-text mb-1 flex items-center gap-1">
             <MapPin size={14} />
@@ -85,6 +85,26 @@ export default function FilterPanel({ filters, onChange }) {
             />
             <span className="label-text">Match end month</span>
           </label>
+        </div>
+
+        <div>
+          <span className="label-text mb-1 flex items-center gap-1">
+            <CalendarDays size={14} />
+            Posted
+          </span>
+          <select
+            className="select select-bordered select-sm w-full"
+            value={filters.postedWithinDays}
+            onChange={(event) => setFilter("postedWithinDays", event.target.value)}
+          >
+            <option value="">Any time</option>
+            <option value="1">Last 1 day</option>
+            <option value="2">Last 2 days</option>
+            <option value="3">Last 3 days</option>
+            <option value="7">Last 7 days</option>
+            <option value="14">Last 14 days</option>
+            <option value="30">Last 30 days</option>
+          </select>
         </div>
       </div>
 

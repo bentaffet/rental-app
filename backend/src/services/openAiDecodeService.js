@@ -10,6 +10,18 @@ function parseLimit(value) {
   return Number.isFinite(limit) ? Math.min(Math.max(limit, 1), 25) : 5;
 }
 
+function isQuotaError(error) {
+  const message = String(error?.message || "");
+  const code = String(error?.code || error?.status || "");
+
+  return (
+    code === "429" ||
+    code === "8" ||
+    /RESOURCE_EXHAUSTED/i.test(message) ||
+    /quota/i.test(message)
+  );
+}
+
 async function decodePost(rawPost, options = {}) {
   try {
     if (
@@ -86,6 +98,21 @@ async function decodePost(rawPost, options = {}) {
       price: decoded.listing.price,
     };
   } catch (error) {
+    if (isQuotaError(error)) {
+      await rawPostModel.upsertRawPost(rawPost.id, {
+        ...rawPost,
+        decoded_status: "pending",
+        decode_error: error.message,
+        updated_at: new Date().toISOString(),
+      });
+
+      return {
+        id: rawPost.id,
+        status: "quota_exhausted",
+        error: error.message,
+      };
+    }
+
     await rawPostModel.upsertRawPost(rawPost.id, {
       ...rawPost,
       decoded_status: "decode_failed",
@@ -107,7 +134,12 @@ async function decodePending(options = {}) {
   const results = [];
 
   for (const rawPost of rawPosts) {
-    results.push(await decodePost(rawPost));
+    const result = await decodePost(rawPost);
+    results.push(result);
+
+    if (result.status === "quota_exhausted") {
+      break;
+    }
   }
 
   return {
@@ -116,6 +148,7 @@ async function decodePending(options = {}) {
     decoded: results.filter((result) => result.status === "decoded").length,
     notListing: results.filter((result) => result.status === "not_listing").length,
     failed: results.filter((result) => result.status === "decode_failed").length,
+    quotaExhausted: results.some((result) => result.status === "quota_exhausted"),
     results,
   };
 }

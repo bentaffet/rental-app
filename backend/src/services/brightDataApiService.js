@@ -1,4 +1,4 @@
-const trackedGroups = require("../../data/groups.example.json");
+const trackedGroupService = require("./trackedGroupService");
 
 const DEFAULT_API_BASE_URL = "https://api.brightdata.com/datasets/v3";
 
@@ -28,29 +28,6 @@ function ensureBrightDataConfig() {
   return config;
 }
 
-function buildInputs(options = {}) {
-  const selectedUrls = Array.isArray(options.urls)
-    ? new Set(options.urls.filter(Boolean))
-    : null;
-  const groups = selectedUrls
-    ? trackedGroups.filter((group) => selectedUrls.has(group.url))
-    : trackedGroups;
-
-  if (selectedUrls && groups.length === 0) {
-    const error = new Error("No matching tracked groups selected");
-    error.status = 400;
-    throw error;
-  }
-
-  return groups.map((group) => ({
-    url: group.url,
-    user_to_not_include: group.user_to_not_include || "",
-    num_of_posts: group.num_of_posts || 25,
-    start_date: group.start_date || "",
-    end_date: group.end_date || "",
-  }));
-}
-
 async function brightDataFetch(path, options = {}) {
   const config = ensureBrightDataConfig();
   const response = await fetch(`${config.baseUrl}${path}`, {
@@ -78,6 +55,7 @@ async function brightDataFetch(path, options = {}) {
 
 async function triggerSnapshot(options = {}) {
   const config = ensureBrightDataConfig();
+  const inputs = await trackedGroupService.buildInputs(options);
   const params = new URLSearchParams({
     dataset_id: config.datasetId,
     include_errors: "true",
@@ -86,13 +64,13 @@ async function triggerSnapshot(options = {}) {
 
   const body = await brightDataFetch(`/trigger?${params.toString()}`, {
     method: "POST",
-    body: JSON.stringify(buildInputs(options)),
+    body: JSON.stringify(inputs),
   });
 
   return {
     snapshot_id: body.snapshot_id,
     raw: body,
-    inputs: buildInputs(options),
+    inputs,
   };
 }
 
@@ -110,7 +88,7 @@ async function downloadSnapshot(snapshotId) {
 }
 
 module.exports = {
-  buildInputs,
+  buildInputs: trackedGroupService.buildInputs,
   downloadSnapshot,
   getSnapshotProgress,
   triggerSnapshot,

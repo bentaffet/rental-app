@@ -4,6 +4,10 @@ function getRawPost(id) {
   return datastore.getDocument("raw_posts", id);
 }
 
+async function getRawPosts(ids = []) {
+  return Promise.all(ids.map((id) => getRawPost(id)));
+}
+
 function upsertRawPost(id, rawPost) {
   return datastore.setDocument("raw_posts", id, rawPost);
 }
@@ -23,6 +27,7 @@ async function listPendingDecode(limit = 10) {
 
 module.exports = {
   getRawPost,
+  getRawPosts,
   listPendingDecode,
   listRawPosts,
   upsertRawPost,

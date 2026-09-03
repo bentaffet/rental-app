@@ -11,6 +11,7 @@ const defaultFilters = {
   startMonthOnly: false,
   endDate: "",
   endMonthOnly: false,
+  postedWithinDays: "",
   sortBy: "posted_desc",
 };
 

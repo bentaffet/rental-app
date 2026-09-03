@@ -24,6 +24,13 @@ export function getTrackedGroups() {
   return request("/api/brightdata/groups");
 }
 
+export function addTrackedGroup(url, numOfPosts = 25) {
+  return request("/api/brightdata/groups/add", {
+    method: "POST",
+    body: JSON.stringify({ url, num_of_posts: numOfPosts }),
+  });
+}
+
 export function getGroupStats() {
   return request("/api/brightdata/groups/stats");
 }
@@ -41,15 +48,25 @@ export function getBrightDataJobs() {
   return request("/api/brightdata/jobs");
 }
 
-export function triggerBrightDataSnapshot(urls = []) {
+export function triggerBrightDataSnapshot(urls = null, numOfPosts = 25) {
+  const body = { num_of_posts: numOfPosts };
+
+  if (Array.isArray(urls)) {
+    body.urls = urls;
+  }
+
   return request("/api/brightdata/trigger", {
     method: "POST",
-    body: JSON.stringify({ urls }),
+    body: JSON.stringify(body),
   });
 }
 
 export function getBrightDataSnapshotStatus(snapshotId) {
   return request(`/api/brightdata/snapshots/${snapshotId}/status`);
+}
+
+export function getSnapshotDecodeProgress(snapshotId) {
+  return request(`/api/brightdata/snapshots/${snapshotId}/decode-progress`);
 }
 
 export function importBrightDataSnapshot(snapshotId) {

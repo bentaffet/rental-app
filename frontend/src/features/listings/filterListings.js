@@ -13,16 +13,33 @@ export function filterListings(listings, filters) {
       filters.endDate,
       filters.endMonthOnly
     );
+    const matchesPostedAge = matchesPostedWithinDays(
+      listing.postedAt || listing.date_posted,
+      filters.postedWithinDays
+    );
 
     return (
       matchesBorough &&
       matchesPrice &&
       matchesStart &&
-      matchesEnd
+      matchesEnd &&
+      matchesPostedAge
     );
   });
 
   return sortListings(filtered, filters.sortBy);
+}
+
+function matchesPostedWithinDays(value, filterValue) {
+  const days = Number(filterValue);
+  if (!days) return true;
+  if (!value) return false;
+
+  const postedTime = new Date(value).getTime();
+  if (Number.isNaN(postedTime)) return false;
+
+  const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+  return postedTime >= cutoff;
 }
 
 function matchesDateFilter(value, filterValue, monthOnly) {
