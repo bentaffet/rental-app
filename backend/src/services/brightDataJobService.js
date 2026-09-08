@@ -141,6 +141,75 @@ async function getSnapshotDecodeProgress(snapshotId) {
   return progress;
 }
 
+async function processReadyJobs(options = {}) {
+  const jobs = await listJobs();
+  const openJobs = jobs.filter((job) => {
+    if (!job.snapshot_id || job.imported_at || job.import_summary) return false;
+    return ["starting", "running", "ready"].includes(job.status);
+  });
+  const processed = [];
+
+  for (const job of openJobs) {
+    const refreshed = await refreshJobStatus(job.snapshot_id);
+
+    if (refreshed.status !== "ready") {
+      processed.push({
+        snapshot_id: refreshed.snapshot_id,
+        status: refreshed.status,
+        imported: false,
+      });
+      continue;
+    }
+
+    try {
+      const imported = await importReadySnapshot(refreshed.snapshot_id);
+      processed.push({
+        snapshot_id: refreshed.snapshot_id,
+        status: "ready",
+        imported: true,
+        import_summary: imported.import_summary,
+      });
+    } catch (error) {
+      processed.push({
+        snapshot_id: refreshed.snapshot_id,
+        status: refreshed.status,
+        imported: false,
+        error: error.message,
+      });
+    }
+  }
+
+  const decodeBatches = Math.min(Math.max(Number(options.decodeBatches || 1), 1), 10);
+  const decodeResults = [];
+
+  if (options.decodePending) {
+    for (let batch = 0; batch < decodeBatches; batch++) {
+      const decodeResult = await options.decodePending({ limit: options.decodeLimit });
+      decodeResults.push(decodeResult);
+
+      if (decodeResult.found === 0 || decodeResult.quotaExhausted) {
+        break;
+      }
+    }
+  }
+
+  return {
+    checked: openJobs.length,
+    imported: processed.filter((job) => job.imported).length,
+    processed,
+    decode: {
+      batches: decodeResults.length,
+      requested: decodeResults.reduce((sum, result) => sum + result.requested, 0),
+      found: decodeResults.reduce((sum, result) => sum + result.found, 0),
+      decoded: decodeResults.reduce((sum, result) => sum + result.decoded, 0),
+      notListing: decodeResults.reduce((sum, result) => sum + result.notListing, 0),
+      failed: decodeResults.reduce((sum, result) => sum + result.failed, 0),
+      quotaExhausted: decodeResults.some((result) => result.quotaExhausted),
+      results: decodeResults,
+    },
+  };
+}
+
 async function getJobGroupScope(job) {
   const allGroups = await trackedGroupService.listGroups();
   return getJobGroupScopeFromCount(job, allGroups.length);
@@ -168,6 +237,7 @@ module.exports = {
   getSnapshotDecodeProgress,
   importReadySnapshot,
   listJobs,
+  processReadyJobs,
   refreshJobStatus,
   startJob,
 };

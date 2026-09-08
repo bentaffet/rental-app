@@ -8,6 +8,7 @@ For manual testing, the website can call this backend to trigger a Bright Data s
 
 ```txt
 POST /api/brightdata/trigger
+POST /api/brightdata/process-ready
 GET  /api/brightdata/snapshots/:snapshot_id/status
 POST /api/brightdata/snapshots/:snapshot_id/import
 ```
@@ -17,12 +18,14 @@ The flow is:
 ```txt
 trigger Bright Data
 Bright Data returns snapshot_id
-poll status until ready
-download snapshot
-import rows into raw_posts and listings
+process-ready cron checks status later
+download ready snapshots
+import rows into raw_posts
+decode pending posts with OpenAI
+write decoded listings into listings
 ```
 
-For automatic delivery later, use Bright Data's scheduler and set delivery to a webhook:
+For automatic delivery later, Bright Data can send results to a webhook:
 
 ```txt
 https://YOUR_BACKEND_DOMAIN/api/brightdata/webhook
@@ -79,6 +82,7 @@ GET  /api/brightdata/groups
 GET  /api/brightdata/groups/stats
 GET  /api/brightdata/jobs
 POST /api/brightdata/trigger
+POST /api/brightdata/process-ready
 GET  /api/brightdata/snapshots/:snapshot_id/status
 POST /api/brightdata/snapshots/:snapshot_id/import
 POST /api/brightdata/webhook
@@ -110,6 +114,34 @@ OPENAI_LISTING_DECODE_MODEL=gpt-4.1-mini
 ```
 
 Use `POST /api/openai/decode-pending?limit=5` to decode a small batch of pending raw posts.
+
+## Cron Setup
+
+Use two cron-job.org jobs so the trigger does not need to wait for Bright Data.
+
+Trigger scrape runs at the top of each selected hour:
+
+```txt
+POST https://YOUR_BACKEND_DOMAIN/api/brightdata/trigger
+Content-Type: application/json
+x-cron-secret: YOUR_CRON_SECRET
+
+{"num_of_posts":10}
+```
+
+Process ready snapshots 30 minutes later:
+
+```txt
+POST https://YOUR_BACKEND_DOMAIN/api/brightdata/process-ready
+Content-Type: application/json
+x-cron-secret: YOUR_CRON_SECRET
+
+{"decode_limit":10,"decode_batches":4}
+```
+
+The process-ready endpoint checks open Bright Data jobs, imports snapshots that are ready,
+then decodes pending raw posts with OpenAI. `decode_limit` is per batch, and
+`decode_batches` lets one cron run process multiple groups worth of imported posts.
 
 Remove older draft/non-listing rows from `listings`:
 

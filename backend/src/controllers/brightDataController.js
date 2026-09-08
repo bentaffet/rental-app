@@ -1,6 +1,7 @@
 const brightDataImportService = require("../services/brightDataImportService");
 const brightDataJobService = require("../services/brightDataJobService");
 const groupStatsService = require("../services/groupStatsService");
+const openAiDecodeService = require("../services/openAiDecodeService");
 const trackedGroupService = require("../services/trackedGroupService");
 
 function emptyTimeline() {
@@ -193,6 +194,22 @@ async function importSnapshot(req, res, next) {
   }
 }
 
+async function processReadyJobs(req, res, next) {
+  try {
+    const decodeLimit = req.body?.decode_limit || req.body?.limit || req.query.limit || 10;
+    const decodeBatches = req.body?.decode_batches || req.query.decode_batches || 4;
+    const result = await brightDataJobService.processReadyJobs({
+      decodeBatches,
+      decodeLimit,
+      decodePending: openAiDecodeService.decodePending,
+    });
+
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+}
+
 module.exports = {
   getPostTimeline,
   getSnapshotStatus,
@@ -202,6 +219,7 @@ module.exports = {
   listJobs,
   listGroupStats,
   listTrackedGroups,
+  processReadyJobs,
   receiveWebhook,
   triggerSnapshot,
 };
