@@ -196,12 +196,14 @@ async function importSnapshot(req, res, next) {
 
 async function processReadyJobs(req, res, next) {
   try {
-    const decodeLimit = req.body?.decode_limit || req.body?.limit || req.query.limit || 10;
-    const decodeBatches = req.body?.decode_batches || req.query.decode_batches || 4;
+    const decodeLimit = req.body?.decode_limit || req.body?.limit || req.query.limit || 3;
+    const decodeBatches = req.body?.decode_batches || req.query.decode_batches || 1;
+    const jobLimit = req.body?.job_limit || req.query.job_limit || 1;
     const result = await brightDataJobService.processReadyJobs({
       decodeBatches,
       decodeLimit,
       decodePending: openAiDecodeService.decodePending,
+      jobLimit,
     });
 
     res.json(result);

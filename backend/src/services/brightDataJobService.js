@@ -143,10 +143,11 @@ async function getSnapshotDecodeProgress(snapshotId) {
 
 async function processReadyJobs(options = {}) {
   const jobs = await listJobs();
+  const jobLimit = Math.min(Math.max(Number(options.jobLimit || 1), 0), 10);
   const openJobs = jobs.filter((job) => {
     if (!job.snapshot_id || job.imported_at || job.import_summary) return false;
     return ["starting", "running", "ready"].includes(job.status);
-  });
+  }).slice(0, jobLimit);
   const processed = [];
 
   for (const job of openJobs) {
@@ -196,6 +197,10 @@ async function processReadyJobs(options = {}) {
   return {
     totalJobs: jobs.length,
     checked: openJobs.length,
+    remainingOpenJobs: jobs.filter((job) => {
+      if (!job.snapshot_id || job.imported_at || job.import_summary) return false;
+      return ["starting", "running", "ready"].includes(job.status);
+    }).length - openJobs.length,
     imported: processed.filter((job) => job.imported).length,
     recentJobs: jobs.slice(0, 10).map((job) => ({
       snapshot_id: job.snapshot_id,

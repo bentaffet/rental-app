@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
+import { ChevronDown } from "lucide-react";
 import FilterPanel from "../components/FilterPanel.jsx";
 import ListingCard from "../components/ListingCard.jsx";
 import { filterListings } from "../features/listings/filterListings.js";
 import { getListings } from "../utils/apiClient.js";
+
+const listingsPageSize = 20;
 
 const defaultFilters = {
   borough: "All",
@@ -19,6 +22,7 @@ export default function Listings() {
   const [filters, setFilters] = useState(defaultFilters);
   const [listings, setListings] = useState([]);
   const [error, setError] = useState("");
+  const [visibleListingCount, setVisibleListingCount] = useState(listingsPageSize);
   const [savedIds, setSavedIds] = useState(() => new Set(["fb-28419843784318303"]));
 
   useEffect(() => {
@@ -34,6 +38,13 @@ export default function Listings() {
     () => filterListings(listings, filters),
     [filters, listings]
   );
+  const visibleListings = filteredListings.slice(0, visibleListingCount);
+  const hasMoreListings = visibleListingCount < filteredListings.length;
+
+  const updateFilters = (nextFilters) => {
+    setFilters(nextFilters);
+    setVisibleListingCount(listingsPageSize);
+  };
 
   const toggleSaved = (listingId) => {
     setSavedIds((current) => {
@@ -54,7 +65,7 @@ export default function Listings() {
         <span className="badge badge-lg">{filteredListings.length}</span>
       </div>
 
-      <FilterPanel filters={filters} onChange={setFilters} />
+      <FilterPanel filters={filters} onChange={updateFilters} />
 
       {error && (
         <div className="alert alert-warning mt-4 rounded">
@@ -63,7 +74,7 @@ export default function Listings() {
       )}
 
       <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {filteredListings.map((listing) => (
+        {visibleListings.map((listing) => (
           <ListingCard
             key={listing.id}
             listing={listing}
@@ -72,6 +83,24 @@ export default function Listings() {
           />
         ))}
       </div>
+
+      {hasMoreListings && (
+        <div className="mt-6 flex flex-col items-center gap-3">
+          <p className="text-sm text-base-content/60">
+            Showing {visibleListings.length} of {filteredListings.length}
+          </p>
+          <button
+            type="button"
+            className="btn btn-outline"
+            onClick={() =>
+              setVisibleListingCount((current) => current + listingsPageSize)
+            }
+          >
+            <ChevronDown size={18} />
+            Load more
+          </button>
+        </div>
+      )}
 
       {filteredListings.length === 0 && (
         <div className="mt-8 rounded border border-base-300 bg-base-100 p-8 text-center">

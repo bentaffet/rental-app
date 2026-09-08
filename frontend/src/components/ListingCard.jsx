@@ -1,9 +1,11 @@
+import { useState } from "react";
 import {
   CalendarDays,
   Heart,
   Image,
   MapPin,
 } from "lucide-react";
+import { getNeighborhoodImage } from "../data/neighborhoodImages.js";
 import { formatDate, formatPosted, formatPrice, pluralize } from "../utils/formatters.js";
 
 export default function ListingCard({ listing, saved, onToggleSaved }) {
@@ -19,6 +21,17 @@ export default function ListingCard({ listing, saved, onToggleSaved }) {
   const roomType = listing.roomType || listing.room_type || "Unknown";
   const originalUrl = listing.originalUrl || listing.source_url || "#";
   const imageUrl = listing.imageUrl || listing.image_url;
+  const fallbackImageUrl = getNeighborhoodImage(listing.neighborhood, listing.borough);
+  const [failedImageUrls, setFailedImageUrls] = useState([]);
+  const isPrimaryImageAvailable =
+    imageUrl && !failedImageUrls.includes(imageUrl);
+  const isFallbackImageAvailable =
+    fallbackImageUrl && !failedImageUrls.includes(fallbackImageUrl);
+  const displayImageUrl = isPrimaryImageAvailable
+    ? imageUrl
+    : isFallbackImageAvailable
+      ? fallbackImageUrl
+      : "";
   const postedAt = listing.postedAt || listing.date_posted || listing.decoded_at;
   const amenities = listing.amenities || [];
   const location = [
@@ -35,6 +48,9 @@ export default function ListingCard({ listing, saved, onToggleSaved }) {
       : bedrooms
         ? `${bedrooms} ${pluralize(bedrooms, "bed")}`
         : "Beds unknown";
+
+  const isShowingFallbackImage =
+    Boolean(displayImageUrl) && displayImageUrl === fallbackImageUrl;
 
   return (
     <article
@@ -55,12 +71,19 @@ export default function ListingCard({ listing, saved, onToggleSaved }) {
       title="Open Facebook post"
     >
       <div className="relative aspect-[4/3] bg-base-200">
-        {imageUrl ? (
+        {displayImageUrl ? (
           <img
-            src={imageUrl}
-            alt=""
+            src={displayImageUrl}
+            alt={isShowingFallbackImage ? `${listing.neighborhood || "NYC"} neighborhood` : ""}
             className="h-full w-full object-cover"
             loading="lazy"
+            onError={() => {
+              setFailedImageUrls((current) =>
+                current.includes(displayImageUrl)
+                  ? current
+                  : [...current, displayImageUrl]
+              );
+            }}
           />
         ) : (
           <div className="grid h-full place-items-center text-base-content/35">

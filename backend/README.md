@@ -136,12 +136,15 @@ POST https://YOUR_BACKEND_DOMAIN/api/brightdata/process-ready
 Content-Type: application/json
 x-cron-secret: YOUR_CRON_SECRET
 
-{"decode_limit":10,"decode_batches":4}
+{"job_limit":1,"decode_limit":3,"decode_batches":1}
 ```
 
 The process-ready endpoint checks open Bright Data jobs, imports snapshots that are ready,
 then decodes pending raw posts with OpenAI. `decode_limit` is per batch, and
 `decode_batches` lets one cron run process multiple groups worth of imported posts.
+Keep these values small for hosted cron jobs so the request returns before the
+provider timeout. Run the job more frequently instead of processing a large
+backlog in one request.
 
 Remove older draft/non-listing rows from `listings`:
 
