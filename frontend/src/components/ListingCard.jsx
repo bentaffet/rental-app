@@ -15,6 +15,7 @@ export default function ListingCard({ listing, saved, onToggleSaved }) {
   const endAvailabilityText =
     listing.endAvailabilityText || listing.end_availability_text;
   const leaseTerm = listing.leaseTerm || listing.lease_term || "Term unknown";
+  const listingType = listing.listingType || listing.listing_type || "Unknown";
   const roomType = listing.roomType || listing.room_type || "Unknown";
   const originalUrl = listing.originalUrl || listing.source_url || "#";
   const imageUrl = listing.imageUrl || listing.image_url;
@@ -112,6 +113,9 @@ export default function ListingCard({ listing, saved, onToggleSaved }) {
         </div>
 
         <div className="mt-3 flex flex-wrap gap-2">
+          {listingType !== "Unknown" && (
+            <span className="badge badge-sm badge-primary">{listingType}</span>
+          )}
           <span className="badge badge-sm">{bedLabel}</span>
           <span className="badge badge-sm">{roomType}</span>
           {amenities.slice(0, 2).map((amenity) => (

@@ -27,6 +27,7 @@ async function searchListings(query = {}) {
         listing.neighborhood,
         listing.borough,
         listing.group_name,
+        listing.listing_type,
         listing.room_type,
       ].some((value) => includesText(value, text));
 

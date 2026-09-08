@@ -20,6 +20,7 @@ async function main() {
     const repaired = repairLocationFromText(rawPost, listing);
     const changed =
       repaired.neighborhood !== listing.neighborhood ||
+      repaired.borough !== listing.borough ||
       repaired.city !== listing.city ||
       repaired.state !== listing.state;
 

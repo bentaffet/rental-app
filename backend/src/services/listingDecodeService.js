@@ -17,6 +17,7 @@ const listingSchema = {
     "available_until",
     "end_availability_text",
     "lease_term",
+    "listing_type",
     "room_type",
     "bedrooms",
     "bathrooms",
@@ -38,6 +39,10 @@ const listingSchema = {
     available_until: { type: ["string", "null"] },
     end_availability_text: { type: ["string", "null"] },
     lease_term: { type: ["string", "null"] },
+    listing_type: {
+      type: ["string", "null"],
+      enum: ["Rental", "Lease takeover", "Sublet/Sublease", "Unknown", null],
+    },
     room_type: {
       type: ["string", "null"],
       enum: ["Private room", "Entire place", "Shared room", "Studio", "Unknown", null],
@@ -110,6 +115,7 @@ function createListingDraft(rawPost) {
     available_until: null,
     end_availability_text: null,
     lease_term: null,
+    listing_type: "Unknown",
     room_type: "Unknown",
     bedrooms: null,
     bathrooms: null,
@@ -125,8 +131,53 @@ function createListingDraft(rawPost) {
   };
 }
 
+const neighborhoodRepairs = [
+  {
+    patterns: [/\bhalsey\s+(?:st(?:reet)?\s+)?l\b/i, /\boff\s+(?:the\s+)?halsey\s+l\b/i],
+    neighborhood: "Bushwick",
+    borough: "Brooklyn",
+    city: "New York",
+    state: "NY",
+  },
+  {
+    patterns: [/\b237\s+madison\s+av(?:e|enue)?\b/i],
+    neighborhood: "Murray Hill",
+    borough: "Manhattan",
+    city: "New York",
+    state: "NY",
+  },
+];
+
+function locationText(rawPost, listing) {
+  return [
+    rawPost.content,
+    listing.title,
+    listing.summary,
+    listing.neighborhood,
+    listing.borough,
+    listing.city,
+    listing.state,
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
 function repairLocationFromText(rawPost, listing) {
-  const text = rawPost.content || "";
+  const text = locationText(rawPost, listing);
+
+  const matchedRepair = neighborhoodRepairs.find((repair) =>
+    repair.patterns.some((pattern) => pattern.test(text))
+  );
+
+  if (matchedRepair) {
+    return {
+      ...listing,
+      neighborhood: matchedRepair.neighborhood,
+      borough: matchedRepair.borough,
+      city: matchedRepair.city,
+      state: matchedRepair.state,
+    };
+  }
 
   if (/jersey city,\s*nj/i.test(text)) {
     return {
@@ -201,7 +252,7 @@ function buildDecodeInput(rawPost) {
         "- title: short listing title using unit type, location, and availability when known",
         "- summary: one factual sentence, max 160 characters",
         "- price: monthly rent as a number only, or null",
-        "- neighborhood: smallest useful location stated, including neighborhood, street, or area",
+        "- neighborhood: neighborhood-level location when confidently stated or inferable from an address, subway stop, cross streets, or well-known local landmark",
         "- borough: NYC borough only, or null",
         "- city: city if stated or clearly implied",
         "- state: state abbreviation if stated or clearly implied",
@@ -210,6 +261,7 @@ function buildDecodeInput(rawPost) {
         "- available_until: YYYY-MM-DD only when an exact end date is stated",
         "- end_availability_text: vague end timing like through December, spring, flexible",
         "- lease_term: stated duration, such as 3 months, 1 year, month-to-month",
+        "- listing_type: Rental for a standard new rental, Lease takeover when someone is taking over an existing lease, Sublet/Sublease for temporary sublets or subleases, or Unknown",
         "- room_type: Private room, Entire place, Shared room, Studio, or Unknown",
         "- bedrooms: number for the full unit when stated",
         "- bathrooms: number for the full unit when stated",
@@ -221,6 +273,13 @@ function buildDecodeInput(rawPost) {
         "- Do not assume the 1st of a month.",
         "- If the post only says a month, season, ASAP, now, or flexible, put that in availability_text and set available_from=null.",
         "- Preserve non-NYC places like Jersey City and Hoboken. Do not put them in borough.",
+        "",
+        "Location rules:",
+        "- Prefer a neighborhood name over a raw address, street, subway station, or phrase like off the Halsey L.",
+        "- If a precise address or subway stop clearly maps to a NYC neighborhood, set neighborhood to that neighborhood and keep borough/city/state separately.",
+        "- Example: off the Halsey L, New York, NY -> neighborhood=Bushwick, borough=Brooklyn, city=New York, state=NY.",
+        "- Example: 237 Madison Avenue, New York, NY -> neighborhood=Murray Hill, borough=Manhattan, city=New York, state=NY.",
+        "- If the neighborhood cannot be confidently inferred, use the stated street, station, or area rather than guessing.",
       ].join("\n"),
     },
     {

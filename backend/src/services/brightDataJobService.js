@@ -194,8 +194,17 @@ async function processReadyJobs(options = {}) {
   }
 
   return {
+    totalJobs: jobs.length,
     checked: openJobs.length,
     imported: processed.filter((job) => job.imported).length,
+    recentJobs: jobs.slice(0, 10).map((job) => ({
+      snapshot_id: job.snapshot_id,
+      status: job.status,
+      imported: Boolean(job.imported_at || job.import_summary),
+      created_at: job.created_at,
+      updated_at: job.updated_at,
+      group_scope: job.group_scope,
+    })),
     processed,
     decode: {
       batches: decodeResults.length,
