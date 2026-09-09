@@ -119,24 +119,30 @@ Use `POST /api/openai/decode-pending?limit=5` to decode a small batch of pending
 
 Use two cron-job.org jobs so the trigger does not need to wait for Bright Data.
 
-Trigger scrape runs at the top of each selected hour:
+Smart scrape trigger runs at the top of each selected hour. It creates separate
+small Bright Data snapshots: three fresher groups at 10 posts each, plus one
+higher-overlap group at 5 posts on a four-hour rotation.
 
 ```txt
-POST https://YOUR_BACKEND_DOMAIN/api/brightdata/trigger
+POST https://YOUR_BACKEND_DOMAIN/api/brightdata/trigger-smart
 Content-Type: application/json
 x-cron-secret: YOUR_CRON_SECRET
+```
 
+Keep `POST /api/brightdata/trigger` available for manual runs. For example:
+
+```json
 {"num_of_posts":10}
 ```
 
-Process ready snapshots 30 minutes later:
+Process ready snapshots every 10-15 minutes:
 
 ```txt
 POST https://YOUR_BACKEND_DOMAIN/api/brightdata/process-ready
 Content-Type: application/json
 x-cron-secret: YOUR_CRON_SECRET
 
-{"job_limit":1,"decode_limit":3,"decode_batches":1}
+{"job_limit":1,"decode_limit":5,"decode_batches":5}
 ```
 
 The process-ready endpoint checks open Bright Data jobs, imports snapshots that are ready,

@@ -149,6 +149,15 @@ async function triggerSnapshot(req, res, next) {
   }
 }
 
+async function triggerSmartSnapshot(req, res, next) {
+  try {
+    const result = await brightDataJobService.startSmartScheduledJobs();
+    res.status(202).json(result);
+  } catch (error) {
+    next(error);
+  }
+}
+
 async function getSnapshotStatus(req, res, next) {
   try {
     const job = await brightDataJobService.refreshJobStatus(req.params.snapshotId);
@@ -223,5 +232,6 @@ module.exports = {
   listTrackedGroups,
   processReadyJobs,
   receiveWebhook,
+  triggerSmartSnapshot,
   triggerSnapshot,
 };

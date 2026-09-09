@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import PipelineTester from "../components/PipelineTester.jsx";
+import { getListings } from "../utils/apiClient.js";
 
 const DATA_PASSWORD = "data!";
 const DATA_UNLOCK_KEY = "leaselens:data-unlocked";
@@ -7,9 +8,22 @@ const DATA_UNLOCK_KEY = "leaselens:data-unlocked";
 export default function Data() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [listingCount, setListingCount] = useState(null);
+  const [listingCountError, setListingCountError] = useState("");
   const [unlocked, setUnlocked] = useState(
     () => window.sessionStorage.getItem(DATA_UNLOCK_KEY) === "true"
   );
+
+  useEffect(() => {
+    if (!unlocked) return;
+
+    getListings()
+      .then((result) => {
+        setListingCount((result.listings || []).length);
+        setListingCountError("");
+      })
+      .catch((apiError) => setListingCountError(apiError.message));
+  }, [unlocked]);
 
   function submitPassword(event) {
     event.preventDefault();
@@ -51,6 +65,14 @@ export default function Data() {
 
   return (
     <div className="page-shell py-6">
+      <section className="mb-5 grid gap-3 sm:grid-cols-3">
+        <div className="rounded border border-base-300 bg-base-100 p-4">
+          <p className="text-sm text-base-content/60">Visible listings</p>
+          <p className="mt-1 text-3xl font-bold text-ink">
+            {listingCountError ? "-" : listingCount ?? "..."}
+          </p>
+        </div>
+      </section>
       <PipelineTester />
     </div>
   );

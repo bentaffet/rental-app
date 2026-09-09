@@ -2,6 +2,7 @@ const brightDataApiService = require("./brightDataApiService");
 const brightDataImportService = require("./brightDataImportService");
 const brightDataJobModel = require("../models/brightDataJobModel");
 const rawPostModel = require("../models/rawPostModel");
+const brightDataSmartScheduleService = require("./brightDataSmartScheduleService");
 const trackedGroupService = require("./trackedGroupService");
 
 async function startJob(options = {}) {
@@ -14,6 +15,7 @@ async function startJob(options = {}) {
     status: "starting",
     inputs: triggered.inputs,
     trigger_response: triggered.raw,
+    smart_schedule: options.smartSchedule || null,
     created_at: now,
     updated_at: now,
     import_summary: null,
@@ -23,6 +25,59 @@ async function startJob(options = {}) {
   return {
     ...job,
     group_scope: await getJobGroupScope(job),
+  };
+}
+
+async function startSmartScheduledJobs(options = {}) {
+  const schedule = brightDataSmartScheduleService.buildSchedule(options.now);
+  const jobs = [];
+  const failed = [];
+
+  for (const batch of schedule.batches) {
+    try {
+      const job = await startJob({
+        groupInputs: batch.groups,
+        smartSchedule: {
+          label: batch.label,
+          reason: batch.reason,
+          cadence: batch.cadence,
+          timezone: schedule.timezone,
+          hour: schedule.hour,
+          weekday: schedule.weekday,
+        },
+      });
+
+      jobs.push({
+        label: batch.label,
+        reason: batch.reason,
+        cadence: batch.cadence,
+        job,
+      });
+    } catch (error) {
+      failed.push({
+        label: batch.label,
+        reason: batch.reason,
+        cadence: batch.cadence,
+        error: error.message,
+      });
+    }
+  }
+
+  if (jobs.length === 0 && failed.length > 0) {
+    const error = new Error("No smart scheduled snapshots could be started");
+    error.status = 502;
+    error.details = failed;
+    throw error;
+  }
+
+  return {
+    triggered: jobs.length,
+    failed: failed.length,
+    timezone: schedule.timezone,
+    hour: schedule.hour,
+    weekday: schedule.weekday,
+    jobs,
+    failures: failed,
   };
 }
 
@@ -253,5 +308,6 @@ module.exports = {
   listJobs,
   processReadyJobs,
   refreshJobStatus,
+  startSmartScheduledJobs,
   startJob,
 };

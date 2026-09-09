@@ -1,4 +1,4 @@
-import { ArrowDownUp, CalendarDays, MapPin } from "lucide-react";
+import { ArrowDownUp, CalendarDays, Heart, MapPin } from "lucide-react";
 import { boroughs } from "../data/sampleListings.js";
 import { formatPrice } from "../utils/formatters.js";
 
@@ -108,7 +108,21 @@ export default function FilterPanel({ filters, onChange }) {
         </div>
       </div>
 
-      <div className="mt-3 flex items-center justify-end gap-2 border-t border-base-300 pt-3">
+      <div className="mt-3 flex flex-col gap-3 border-t border-base-300 pt-3 sm:flex-row sm:items-center sm:justify-between">
+        <label className="label cursor-pointer justify-start gap-3 p-0">
+          <input
+            type="checkbox"
+            className="checkbox checkbox-sm checkbox-primary"
+            checked={filters.savedOnly}
+            onChange={(event) => setFilter("savedOnly", event.target.checked)}
+          />
+          <span className="label-text flex items-center gap-1">
+            <Heart size={14} />
+            Saved only
+          </span>
+        </label>
+
+        <div className="flex items-center justify-end gap-2">
         <ArrowDownUp size={15} className="text-base-content/50" />
         <select
           className="select select-bordered select-sm w-full sm:w-52"
@@ -120,6 +134,7 @@ export default function FilterPanel({ filters, onChange }) {
           <option value="price_asc">Price low to high</option>
           <option value="price_desc">Price high to low</option>
         </select>
+        </div>
       </div>
     </section>
   );

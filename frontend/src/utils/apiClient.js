@@ -1,6 +1,8 @@
 const API_BASE_URL = (
   import.meta.env.VITE_API_BASE_URL || "http://localhost:4000"
 ).replace(/\/+$/, "");
+const LISTINGS_CACHE_KEY = "roomup:listings-cache";
+const LISTINGS_CACHE_TTL_MS = 5 * 60 * 1000;
 
 async function request(path, options = {}) {
   const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -42,6 +44,32 @@ export function getPostTimeline(groupUrl = "") {
 
 export function getListings() {
   return request("/api/listings");
+}
+
+export function getListing(listingId) {
+  return request(`/api/listings/${encodeURIComponent(listingId)}`);
+}
+
+export function getCachedListings() {
+  try {
+    const cached = JSON.parse(window.sessionStorage.getItem(LISTINGS_CACHE_KEY) || "null");
+    if (!cached?.listings || Date.now() - cached.cachedAt > LISTINGS_CACHE_TTL_MS) {
+      return [];
+    }
+    return cached.listings;
+  } catch {
+    return [];
+  }
+}
+
+export function cacheListings(listings) {
+  window.sessionStorage.setItem(
+    LISTINGS_CACHE_KEY,
+    JSON.stringify({
+      cachedAt: Date.now(),
+      listings,
+    })
+  );
 }
 
 export function getBrightDataJobs() {

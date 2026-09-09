@@ -4,6 +4,7 @@ import AuthLayout from "./components/AuthLayout.jsx";
 import AppLayout from "./components/AppLayout.jsx";
 import { ProtectedRoute, PublicOnlyRoute } from "./routes/AuthRoutes.jsx";
 import Listings from "./pages/Listings.jsx";
+import ListingDetails from "./pages/ListingDetails.jsx";
 import Data from "./pages/Data.jsx";
 import Login from "./pages/Login.jsx";
 import Onboarding from "./pages/Onboarding.jsx";
@@ -27,6 +28,7 @@ export default function App() {
             <Route index element={<Navigate to="/listings" replace />} />
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/listings" element={<Listings />} />
+            <Route path="/listings/:listingId" element={<ListingDetails />} />
             <Route path="/data" element={<Data />} />
           </Route>
         </Route>

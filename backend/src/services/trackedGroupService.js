@@ -84,6 +84,28 @@ function toBrightDataInput(group, postCountOverride) {
   };
 }
 
+function getGroupInputs(options = {}) {
+  if (Array.isArray(options.groupInputs)) {
+    return options.groupInputs;
+  }
+
+  if (Array.isArray(options.groups)) {
+    return options.groups;
+  }
+
+  return [];
+}
+
+function buildGroupsByUrl(groups) {
+  const groupsByUrl = new Map();
+
+  for (const group of groups) {
+    groupsByUrl.set(normalizeComparableUrl(group.url), group);
+  }
+
+  return groupsByUrl;
+}
+
 async function listGroups() {
   let customGroups = [];
 
@@ -148,6 +170,26 @@ async function addGroup(options = {}) {
 }
 
 async function buildInputs(options = {}) {
+  const explicitGroupInputs = getGroupInputs(options);
+  if (explicitGroupInputs.length > 0) {
+    const groupsByUrl = buildGroupsByUrl(await listGroups());
+
+    return explicitGroupInputs.map((input) => {
+      const url = normalizeFacebookGroupUrl(input.url);
+      const matchingGroup = groupsByUrl.get(normalizeComparableUrl(url));
+      return toBrightDataInput(
+        {
+          ...(matchingGroup || {}),
+          url,
+          user_to_not_include: input.user_to_not_include ?? matchingGroup?.user_to_not_include ?? "",
+          start_date: input.start_date ?? matchingGroup?.start_date ?? "",
+          end_date: input.end_date ?? matchingGroup?.end_date ?? "",
+        },
+        input.num_of_posts
+      );
+    });
+  }
+
   const urls = Array.isArray(options.urls) ? options.urls.filter(Boolean) : [];
   const selectedUrls = urls.length > 0
     ? new Set(urls.map(normalizeComparableUrl))

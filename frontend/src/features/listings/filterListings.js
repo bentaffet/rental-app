@@ -1,7 +1,10 @@
 export function filterListings(listings, filters) {
   const filtered = listings.filter((listing) => {
+    const listingId = listing.id;
     const matchesBorough =
       filters.borough === "All" || listing.borough === filters.borough;
+    const matchesSaved =
+      !filters.savedOnly || filters.savedIds?.has(listingId);
     const matchesPrice = !listing.price || listing.price <= filters.maxPrice;
     const matchesStart = matchesDateFilter(
       listing.availableFrom || listing.available_from,
@@ -20,6 +23,7 @@ export function filterListings(listings, filters) {
 
     return (
       matchesBorough &&
+      matchesSaved &&
       matchesPrice &&
       matchesStart &&
       matchesEnd &&
