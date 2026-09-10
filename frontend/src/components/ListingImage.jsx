@@ -30,7 +30,7 @@ export default function ListingImage({ listing, className = "" }) {
     <img
       src={displayImageUrl}
       alt={isShowingFallbackImage ? `${listing.neighborhood || "NYC"} map` : ""}
-      className={`object-cover ${className}`}
+      className={`${isShowingFallbackImage ? "object-contain" : "object-cover"} ${className}`}
       loading="lazy"
       onError={() => {
         setFailedImageUrls((current) =>

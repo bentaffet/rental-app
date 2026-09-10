@@ -148,5 +148,12 @@ export const sampleListings = [
   },
 ];
 
-export const boroughs = ["All", "Manhattan", "Brooklyn", "Queens"];
+export const boroughs = [
+  "All",
+  "Manhattan",
+  "Brooklyn",
+  "Queens",
+  "Bronx",
+  "Staten Island",
+];
 export const roomTypes = ["All", "Private room", "Entire place"];

@@ -7,7 +7,7 @@ const { fingerprintPhotoUrls, HASH_VERSION } = require("./imageFingerprintServic
 
 function parseLimit(value) {
   const limit = Number(value || 5);
-  return Number.isFinite(limit) ? Math.min(Math.max(limit, 1), 25) : 5;
+  return Number.isFinite(limit) ? Math.min(Math.max(Math.floor(limit), 1), 25) : 5;
 }
 
 function isQuotaError(error) {
@@ -154,7 +154,7 @@ async function decodePending(options = {}) {
 }
 
 async function decodeOne(id) {
-  const rawPost = await rawPostModel.getRawPost(id);
+  const rawPost = await rawPostModel.getRawPost(id, { fresh: true });
 
   if (!rawPost) {
     const error = new Error("Raw post not found");
@@ -166,10 +166,7 @@ async function decodeOne(id) {
 }
 
 async function resetFailedDecodes() {
-  const rawPosts = await rawPostModel.listRawPosts();
-  const failedPosts = rawPosts.filter((post) =>
-    ["decode_failed", "decoding"].includes(post.decoded_status)
-  );
+  const failedPosts = await rawPostModel.listFailedDecodes();
 
   for (const post of failedPosts) {
     await rawPostModel.upsertRawPost(post.id, {

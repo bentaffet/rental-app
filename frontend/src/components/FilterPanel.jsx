@@ -1,97 +1,157 @@
-import { ArrowDownUp, CalendarDays, Heart, MapPin } from "lucide-react";
 import { boroughs } from "../data/sampleListings.js";
 import { formatPrice } from "../utils/formatters.js";
 
-export default function FilterPanel({ filters, onChange }) {
+const priceMinimum = 0;
+const priceMaximum = 6000;
+const priceStep = 250;
+
+const priceOptions = Array.from(
+  { length: priceMaximum / priceStep + 1 },
+  (_, index) => index * priceStep
+);
+
+export default function FilterPanel({ filters, monthOptions, onChange }) {
   const setFilter = (key, value) => onChange({ ...filters, [key]: value });
+  const setPrice = (key, value) => {
+    const nextValue = Number(value);
+    const nextFilters = { ...filters, [key]: nextValue };
+
+    if (key === "minPrice" && nextValue > filters.maxPrice) {
+      nextFilters.maxPrice = nextValue;
+    }
+
+    if (key === "maxPrice" && nextValue < filters.minPrice) {
+      nextFilters.minPrice = nextValue;
+    }
+
+    onChange(nextFilters);
+  };
+
+  const minPercent = (filters.minPrice / priceMaximum) * 100;
+  const maxPercent = (filters.maxPrice / priceMaximum) * 100;
 
   return (
-    <section className="rounded border border-base-300 bg-base-100 p-3">
-      <div className="grid gap-3 lg:grid-cols-[1fr_1.1fr_1.1fr_1.1fr_1.2fr]">
+    <aside className="rounded-xl border border-base-300 bg-base-100 p-4 shadow-sm">
+      <div className="mb-5 border-b border-base-300 pb-4">
+        <h2 className="font-semibold text-ink">Filters</h2>
+      </div>
+
+      <div className="space-y-5">
         <label className="form-control">
-          <span className="label-text mb-1 flex items-center gap-1">
-            <MapPin size={14} />
-            Area
-          </span>
-          <div className="flex gap-2">
-            <select
-              className="select select-bordered select-sm min-w-0 flex-1"
-              value={filters.borough}
-              onChange={(event) => setFilter("borough", event.target.value)}
-            >
-              {boroughs.map((borough) => (
-                <option key={borough}>{borough}</option>
-              ))}
-            </select>
+          <span className="label-text mb-2 font-medium text-ink">Borough</span>
+          <select
+            className="select select-bordered w-full"
+            value={filters.borough}
+            onChange={(event) => setFilter("borough", event.target.value)}
+          >
+            {boroughs.map((borough) => (
+              <option key={borough} value={borough}>
+                {borough === "All" ? "All boroughs" : borough}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <div className="border-t border-base-300 pt-5">
+          <div className="mb-3 font-medium text-ink">Monthly price</div>
+
+          <div className="grid grid-cols-2 gap-2 lg:grid-cols-1">
+            <label className="form-control min-w-0">
+              <span className="label-text mb-1.5 text-xs text-base-content/60">Max price</span>
+              <select
+                className="select select-bordered select-sm w-full"
+                value={filters.maxPrice}
+                onChange={(event) => setPrice("maxPrice", event.target.value)}
+              >
+                {priceOptions.slice(1).map((price) => (
+                  <option key={price} value={price}>
+                    {price === priceMaximum ? "No max" : formatPrice(price)}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="form-control min-w-0">
+              <span className="label-text mb-1.5 text-xs text-base-content/60">Min price</span>
+              <select
+                className="select select-bordered select-sm w-full"
+                value={filters.minPrice}
+                onChange={(event) => setPrice("minPrice", event.target.value)}
+              >
+                {priceOptions.slice(0, -1).map((price) => (
+                  <option key={price} value={price}>
+                    {price === priceMinimum ? "No min" : formatPrice(price)}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
-        </label>
 
-        <label className="form-control">
-          <span className="label-text mb-1">Max rent {formatPrice(filters.maxPrice)}</span>
-          <input
-            type="range"
-            min="1200"
-            max="3500"
-            step="50"
-            value={filters.maxPrice}
-            onChange={(event) => setFilter("maxPrice", Number(event.target.value))}
-            className="range range-primary range-sm"
-          />
-        </label>
-
-        <div>
-          <label className="form-control">
-            <span className="label-text mb-1 flex items-center gap-1">
-              <CalendarDays size={14} />
-              Start
-            </span>
+          <div
+            className="price-range mt-5"
+            style={{ "--range-start": `${minPercent}%`, "--range-end": `${maxPercent}%` }}
+          >
+            <div className="price-range-track" aria-hidden="true" />
             <input
-              className="input input-bordered input-sm"
-              type="date"
-              value={filters.startDate}
-              onChange={(event) => setFilter("startDate", event.target.value)}
+              type="range"
+              min={priceMinimum}
+              max={priceMaximum}
+              step={priceStep}
+              value={filters.minPrice}
+              onChange={(event) => setPrice("minPrice", event.target.value)}
+              aria-label="Minimum monthly price"
             />
-          </label>
-          <label className="label mt-2 cursor-pointer justify-start gap-3">
             <input
-              type="checkbox"
-              className="checkbox checkbox-sm"
-              checked={filters.startMonthOnly}
-              onChange={(event) => setFilter("startMonthOnly", event.target.checked)}
+              type="range"
+              min={priceMinimum}
+              max={priceMaximum}
+              step={priceStep}
+              value={filters.maxPrice}
+              onChange={(event) => setPrice("maxPrice", event.target.value)}
+              aria-label="Maximum monthly price"
             />
-            <span className="label-text">Match start month</span>
-          </label>
+          </div>
+          <div className="mt-2 flex justify-between text-xs text-base-content/55">
+            <span>{filters.minPrice ? formatPrice(filters.minPrice) : "Any"}</span>
+            <span>{filters.maxPrice === priceMaximum ? "Any" : formatPrice(filters.maxPrice)}</span>
+          </div>
         </div>
 
-        <div>
-          <label className="form-control">
-            <span className="label-text mb-1 flex items-center gap-1">
-              <CalendarDays size={14} />
-              End
-            </span>
-            <input
-              className="input input-bordered input-sm"
-              type="date"
-              value={filters.endDate}
-              onChange={(event) => setFilter("endDate", event.target.value)}
-            />
-          </label>
-          <label className="label mt-2 cursor-pointer justify-start gap-3">
-            <input
-              type="checkbox"
-              className="checkbox checkbox-sm"
-              checked={filters.endMonthOnly}
-              onChange={(event) => setFilter("endMonthOnly", event.target.checked)}
-            />
-            <span className="label-text">Match end month</span>
-          </label>
+        <div className="border-t border-base-300 pt-5">
+          <div className="mb-3 font-medium text-ink">Availability</div>
+          <div className="space-y-3">
+            <label className="form-control">
+              <span className="label-text mb-1.5 text-xs text-base-content/60">Start month</span>
+              <select
+                className="select select-bordered select-sm w-full"
+                value={filters.startMonth}
+                onChange={(event) => setFilter("startMonth", event.target.value)}
+              >
+                <option value="">Any month</option>
+                {monthOptions.map((month) => (
+                  <option key={month.value} value={month.value}>{month.label}</option>
+                ))}
+              </select>
+            </label>
+
+            <label className="form-control">
+              <span className="label-text mb-1.5 text-xs text-base-content/60">End month</span>
+              <select
+                className="select select-bordered select-sm w-full"
+                value={filters.endMonth}
+                onChange={(event) => setFilter("endMonth", event.target.value)}
+              >
+                <option value="">Any month</option>
+                {monthOptions.map((month) => (
+                  <option key={month.value} value={month.value}>{month.label}</option>
+                ))}
+              </select>
+            </label>
+          </div>
         </div>
 
-        <div>
-          <span className="label-text mb-1 flex items-center gap-1">
-            <CalendarDays size={14} />
-            Posted
-          </span>
+        <label className="form-control border-t border-base-300 pt-5">
+          <span className="label-text mb-2 font-medium text-ink">Posted</span>
           <select
             className="select select-bordered select-sm w-full"
             value={filters.postedWithinDays}
@@ -105,37 +165,8 @@ export default function FilterPanel({ filters, onChange }) {
             <option value="14">Last 14 days</option>
             <option value="30">Last 30 days</option>
           </select>
-        </div>
-      </div>
-
-      <div className="mt-3 flex flex-col gap-3 border-t border-base-300 pt-3 sm:flex-row sm:items-center sm:justify-between">
-        <label className="label cursor-pointer justify-start gap-3 p-0">
-          <input
-            type="checkbox"
-            className="checkbox checkbox-sm checkbox-primary"
-            checked={filters.savedOnly}
-            onChange={(event) => setFilter("savedOnly", event.target.checked)}
-          />
-          <span className="label-text flex items-center gap-1">
-            <Heart size={14} />
-            Saved only
-          </span>
         </label>
-
-        <div className="flex items-center justify-end gap-2">
-        <ArrowDownUp size={15} className="text-base-content/50" />
-        <select
-          className="select select-bordered select-sm w-full sm:w-52"
-          value={filters.sortBy}
-          onChange={(event) => setFilter("sortBy", event.target.value)}
-        >
-          <option value="none">Recommended</option>
-          <option value="posted_desc">Newest posted</option>
-          <option value="price_asc">Price low to high</option>
-          <option value="price_desc">Price high to low</option>
-        </select>
-        </div>
       </div>
-    </section>
+    </aside>
   );
 }

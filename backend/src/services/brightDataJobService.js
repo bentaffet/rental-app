@@ -83,7 +83,7 @@ async function startSmartScheduledJobs(options = {}) {
 
 async function refreshJobStatus(snapshotId) {
   const progress = await brightDataApiService.getSnapshotProgress(snapshotId);
-  const existing = (await brightDataJobModel.getJob(snapshotId)) || {
+  const existing = (await brightDataJobModel.getJob(snapshotId, { fresh: true })) || {
     id: snapshotId,
     snapshot_id: snapshotId,
     created_at: new Date().toISOString(),

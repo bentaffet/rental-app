@@ -1,7 +1,7 @@
 const datastore = require("./datastore");
 
-function getRawPost(id) {
-  return datastore.getDocument("raw_posts", id);
+function getRawPost(id, options) {
+  return datastore.getDocument("raw_posts", id, options);
 }
 
 async function getRawPosts(ids = []) {
@@ -17,18 +17,18 @@ async function listRawPosts() {
 }
 
 async function listPendingDecode(limit = 10) {
-  const rawPosts = await listRawPosts();
+  return datastore.listDocumentsByField("raw_posts", "decoded_status", ["pending", "decode_failed"], limit);
+}
 
-  return rawPosts
-    .filter((post) => !["decoded", "not_listing", "decoding"].includes(post.decoded_status))
-    .sort((a, b) => new Date(b.date_posted || 0) - new Date(a.date_posted || 0))
-    .slice(0, limit);
+function listFailedDecodes() {
+  return datastore.listDocumentsByField("raw_posts", "decoded_status", ["decode_failed", "decoding"]);
 }
 
 module.exports = {
   getRawPost,
   getRawPosts,
   listPendingDecode,
+  listFailedDecodes,
   listRawPosts,
   upsertRawPost,
 };

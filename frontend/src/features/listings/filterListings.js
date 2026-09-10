@@ -5,16 +5,17 @@ export function filterListings(listings, filters) {
       filters.borough === "All" || listing.borough === filters.borough;
     const matchesSaved =
       !filters.savedOnly || filters.savedIds?.has(listingId);
-    const matchesPrice = !listing.price || listing.price <= filters.maxPrice;
-    const matchesStart = matchesDateFilter(
+    const matchesPrice =
+      !listing.price ||
+      (listing.price >= filters.minPrice &&
+        (filters.maxPrice >= 6000 || listing.price <= filters.maxPrice));
+    const matchesStart = matchesMonthFilter(
       listing.availableFrom || listing.available_from,
-      filters.startDate,
-      filters.startMonthOnly
+      filters.startMonth
     );
-    const matchesEnd = matchesDateFilter(
+    const matchesEnd = matchesMonthFilter(
       listing.availableUntil || listing.available_until,
-      filters.endDate,
-      filters.endMonthOnly
+      filters.endMonth
     );
     const matchesPostedAge = matchesPostedWithinDays(
       listing.postedAt || listing.date_posted,
@@ -46,7 +47,7 @@ function matchesPostedWithinDays(value, filterValue) {
   return postedTime >= cutoff;
 }
 
-function matchesDateFilter(value, filterValue, monthOnly) {
+function matchesMonthFilter(value, filterValue) {
   if (!filterValue) {
     return true;
   }
@@ -55,11 +56,7 @@ function matchesDateFilter(value, filterValue, monthOnly) {
     return false;
   }
 
-  if (monthOnly) {
-    return value.slice(0, 7) === filterValue.slice(0, 7);
-  }
-
-  return value === filterValue;
+  return value.slice(0, 7) === filterValue;
 }
 
 function sortListings(listings, sortBy) {

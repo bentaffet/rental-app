@@ -7,7 +7,7 @@
     "test": "test"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node --test test/*.test.js",
     "start": "node index.js",
     "dev": "node index.js",
     "check": "find . -path './node_modules' -prune -o -name '*.js' -exec node --check {} \\;",
@@ -17,6 +17,7 @@
     "dedupe:listings": "node src/scripts/recomputeListingDedupe.js",
     "archive:listings": "node src/scripts/archiveOldListings.js",
     "repair:locations": "node src/scripts/repairListingLocations.js",
+    "repair:metadata": "node src/scripts/repairScrapedListingMetadata.js",
     "sync:listing-post-dates": "node src/scripts/syncListingPostDates.js"
   },
   "keywords": [],

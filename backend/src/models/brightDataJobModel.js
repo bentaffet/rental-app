@@ -1,7 +1,7 @@
 const datastore = require("./datastore");
 
-function getJob(snapshotId) {
-  return datastore.getDocument("brightdata_jobs", snapshotId);
+function getJob(snapshotId, options) {
+  return datastore.getDocument("brightdata_jobs", snapshotId, options);
 }
 
 function upsertJob(snapshotId, job) {

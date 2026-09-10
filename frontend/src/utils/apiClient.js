@@ -3,6 +3,8 @@ const API_BASE_URL = (
 ).replace(/\/+$/, "");
 const LISTINGS_CACHE_KEY = "roomup:listings-cache";
 const LISTINGS_CACHE_TTL_MS = 5 * 60 * 1000;
+let listingsCache = null;
+let listingsRequest = null;
 
 async function request(path, options = {}) {
   const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -43,33 +45,57 @@ export function getPostTimeline(groupUrl = "") {
 }
 
 export function getListings() {
-  return request("/api/listings");
+  const cached = readListingsCache();
+  if (cached) return Promise.resolve({ listings: cached.listings });
+  if (listingsRequest) return listingsRequest;
+  const pending = request("/api/listings").then((result) => {
+    if (listingsRequest === pending) cacheListings(result.listings || []);
+    return result;
+  }).finally(() => {
+    if (listingsRequest === pending) listingsRequest = null;
+  });
+  listingsRequest = pending;
+  return pending;
 }
 
 export function getListing(listingId) {
+  const cached = readListingsCache()?.listings.find((listing) => listing.id === listingId);
+  if (cached) return Promise.resolve({ listing: cached });
   return request(`/api/listings/${encodeURIComponent(listingId)}`);
 }
 
-export function getCachedListings() {
+function readListingsCache() {
   try {
-    const cached = JSON.parse(window.sessionStorage.getItem(LISTINGS_CACHE_KEY) || "null");
-    if (!cached?.listings || Date.now() - cached.cachedAt > LISTINGS_CACHE_TTL_MS) {
-      return [];
-    }
-    return cached.listings;
+    listingsCache ||= JSON.parse(window.sessionStorage.getItem(LISTINGS_CACHE_KEY) || "null");
   } catch {
-    return [];
+    // Browsing still works when storage is blocked or full.
   }
+  if (!Array.isArray(listingsCache?.listings) || !Number.isFinite(listingsCache.cachedAt) ||
+      Date.now() - listingsCache.cachedAt >= LISTINGS_CACHE_TTL_MS) return null;
+  return listingsCache;
+}
+
+export function getCachedListings() {
+  return readListingsCache()?.listings || [];
 }
 
 export function cacheListings(listings) {
-  window.sessionStorage.setItem(
-    LISTINGS_CACHE_KEY,
-    JSON.stringify({
-      cachedAt: Date.now(),
-      listings,
-    })
-  );
+  listingsCache = { cachedAt: Date.now(), listings };
+  try {
+    window.sessionStorage.setItem(LISTINGS_CACHE_KEY, JSON.stringify(listingsCache));
+  } catch {
+    // Keep the in-memory cache if browser storage is unavailable.
+  }
+}
+
+function invalidateListings() {
+  listingsCache = null;
+  listingsRequest = null;
+  try {
+    window.sessionStorage.removeItem(LISTINGS_CACHE_KEY);
+  } catch {
+    // Storage is optional.
+  }
 }
 
 export function getBrightDataJobs() {
@@ -103,10 +129,12 @@ export function importBrightDataSnapshot(snapshotId) {
   });
 }
 
-export function decodePendingListings(limit = 5) {
-  return request(`/api/openai/decode-pending?limit=${limit}`, {
+export async function decodePendingListings(limit = 5) {
+  const result = await request(`/api/openai/decode-pending?limit=${limit}`, {
     method: "POST",
   });
+  invalidateListings();
+  return result;
 }
 
 export function resetFailedDecodes() {

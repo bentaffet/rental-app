@@ -2,6 +2,7 @@ const crypto = require("crypto");
 const { z } = require("zod");
 
 const rawPostModel = require("../models/rawPostModel");
+const { getScrapedMetadata } = require("./scrapedListingMetadata");
 
 const brightDataPostSchema = z
   .object({
@@ -50,7 +51,9 @@ function buildRawPostId(post) {
   return `${groupId}_${postId}`;
 }
 
-function nextDecodeStatus(existing) {
+function nextDecodeStatus(existing, metadataChanged) {
+  if (existing?.decoded_status === "decoding") return "decoding";
+  if (metadataChanged) return "pending";
   if (["decoded", "not_listing"].includes(existing?.decoded_status)) {
     return existing.decoded_status;
   }
@@ -60,6 +63,7 @@ function nextDecodeStatus(existing) {
 
 async function importBrightDataPayload(payload, options = {}) {
   const records = getRecords(payload);
+  const seenPosts = new Map();
   const summary = {
     received: records.length,
     imported: 0,
@@ -88,9 +92,15 @@ async function importBrightDataPayload(payload, options = {}) {
       content: post.content,
       attachments: post.attachments,
       date_posted: post.date_posted,
+      scraped_listing: getScrapedMetadata({ raw_payload: post }),
     });
 
-    const existing = await rawPostModel.getRawPost(id);
+    // Reuse records within this delivery, but read fresh state across workers
+    // before deciding whether to queue or overwrite an existing post.
+    const existing = seenPosts.has(id)
+      ? seenPosts.get(id)
+      : await rawPostModel.getRawPost(id, { fresh: true });
+    seenPosts.set(id, existing);
     summary.rawPostIds.push(id);
 
     if (existing?.content_hash === contentHash) {
@@ -111,7 +121,8 @@ async function importBrightDataPayload(payload, options = {}) {
       author_name: post.user_username_raw || null,
       raw_payload: post,
       content_hash: contentHash,
-      decoded_status: nextDecodeStatus(existing),
+      decoded_status: nextDecodeStatus(existing, Boolean(existing) &&
+        stableHash(getScrapedMetadata(existing)) !== stableHash(getScrapedMetadata({ raw_payload: post }))),
       source_snapshot_id: existing?.source_snapshot_id || options.snapshotId || null,
       latest_snapshot_id: options.snapshotId || existing?.latest_snapshot_id || null,
       imported_at: new Date().toISOString(),
@@ -119,6 +130,7 @@ async function importBrightDataPayload(payload, options = {}) {
     };
 
     await rawPostModel.upsertRawPost(id, rawPost);
+    seenPosts.set(id, rawPost);
 
     if (existing) {
       summary.updated += 1;
