@@ -9,8 +9,13 @@ import {
 } from "./authStorage.js";
 import { AuthContext } from "./authContextValue.js";
 
+function getInitialUser() {
+  const isGuestEntry = new URLSearchParams(window.location.search).get("guest") === "1";
+  return isGuestEntry ? continueAsGuest() : getCurrentUser();
+}
+
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(() => getCurrentUser());
+  const [user, setUser] = useState(getInitialUser);
 
   const value = useMemo(
     () => ({

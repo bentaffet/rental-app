@@ -4,7 +4,7 @@ import { LogIn } from "lucide-react";
 import { useAuth } from "../auth/useAuth.js";
 
 export default function Login() {
-  const { login, skipLogin } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [email, setEmail] = useState("");
@@ -22,11 +22,6 @@ export default function Login() {
     } catch (loginError) {
       setError(loginError.message);
     }
-  }
-
-  function continueWithoutAccount() {
-    skipLogin();
-    navigate("/listings", { replace: true });
   }
 
   return (
@@ -77,13 +72,12 @@ export default function Login() {
           <span className="h-px flex-1 bg-base-300" />
         </div>
 
-        <button
-          type="button"
+        <a
+          href="/listings?guest=1"
           className="btn btn-ghost w-full"
-          onClick={continueWithoutAccount}
         >
           Skip login
-        </button>
+        </a>
 
         <p className="mt-5 text-sm text-base-content/70">
           New here?{" "}
