@@ -71,8 +71,8 @@ export default function ListingCard({ listing, saved, onToggleSaved }) {
       tabIndex={hasOriginalUrl ? 0 : undefined}
       title={hasOriginalUrl ? "Open Facebook post" : undefined}
     >
-      <div className="relative aspect-[16/10] bg-base-200">
-        <ListingImage listing={listing} className="h-full w-full" />
+      <div className="relative aspect-[16/10] w-full shrink-0 overflow-hidden bg-base-200">
+        <ListingImage listing={listing} className="absolute inset-0 h-full w-full" />
         <div className="absolute right-3 top-3 flex gap-2">
           <button
             type="button"

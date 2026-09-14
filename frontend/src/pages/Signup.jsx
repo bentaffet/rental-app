@@ -22,10 +22,7 @@ export default function Signup() {
 
     try {
       signup({ email, password });
-      navigate("/login", {
-        replace: true,
-        state: { message: "Account created. Log in to continue." },
-      });
+      navigate("/onboarding", { replace: true });
     } catch (signupError) {
       setError(signupError.message);
     }

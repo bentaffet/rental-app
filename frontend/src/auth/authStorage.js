@@ -1,5 +1,11 @@
 const USERS_KEY = "roomup:users";
 const SESSION_KEY = "roomup:session";
+const TEST_ACCOUNT = {
+  email: "test@test.com",
+  password: "test",
+  preferences: null,
+  createdAt: "2026-01-01T00:00:00.000Z",
+};
 
 function readJson(key, fallback) {
   try {
@@ -18,6 +24,37 @@ function normalizeEmail(email) {
   return email.trim().toLowerCase();
 }
 
+function readUsers() {
+  const storedUsers = readJson(USERS_KEY, []);
+  const users = Array.isArray(storedUsers) ? storedUsers : [];
+  const testAccountIndex = users.findIndex(
+    (user) => normalizeEmail(user.email || "") === TEST_ACCOUNT.email
+  );
+
+  if (testAccountIndex === -1) {
+    const nextUsers = [...users, TEST_ACCOUNT];
+    writeJson(USERS_KEY, nextUsers);
+    return nextUsers;
+  }
+
+  const storedTestAccount = users[testAccountIndex];
+  if (
+    storedTestAccount.email === TEST_ACCOUNT.email &&
+    storedTestAccount.password === TEST_ACCOUNT.password
+  ) {
+    return users;
+  }
+
+  const nextUsers = [...users];
+  nextUsers[testAccountIndex] = {
+    ...storedTestAccount,
+    email: TEST_ACCOUNT.email,
+    password: TEST_ACCOUNT.password,
+  };
+  writeJson(USERS_KEY, nextUsers);
+  return nextUsers;
+}
+
 function toPublicUser(user) {
   if (!user) return null;
 
@@ -31,32 +68,36 @@ export function getCurrentUser() {
   const session = readJson(SESSION_KEY, null);
   if (!session?.email) return null;
 
-  const users = readJson(USERS_KEY, []);
+  const users = readUsers();
   const user = users.find((candidate) => candidate.email === session.email);
   return toPublicUser(user);
 }
 
 export function signUp({ email, password }) {
   const normalizedEmail = normalizeEmail(email);
-  const users = readJson(USERS_KEY, []);
+  const users = readUsers();
 
   if (users.some((user) => user.email === normalizedEmail)) {
     throw new Error("An account with that email already exists.");
   }
 
-  users.push({
+  const user = {
     email: normalizedEmail,
     password,
     preferences: null,
     createdAt: new Date().toISOString(),
-  });
+  };
 
+  users.push(user);
   writeJson(USERS_KEY, users);
+  writeJson(SESSION_KEY, { email: normalizedEmail });
+
+  return toPublicUser(user);
 }
 
 export function logIn({ email, password }) {
   const normalizedEmail = normalizeEmail(email);
-  const users = readJson(USERS_KEY, []);
+  const users = readUsers();
   const user = users.find(
     (candidate) =>
       candidate.email === normalizedEmail && candidate.password === password
@@ -80,7 +121,7 @@ export function savePreferences(preferences) {
     throw new Error("You need to be logged in to save preferences.");
   }
 
-  const users = readJson(USERS_KEY, []);
+  const users = readUsers();
   const nextUsers = users.map((user) =>
     user.email === session.email
       ? {

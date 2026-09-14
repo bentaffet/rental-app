@@ -28,6 +28,12 @@ export default function Login() {
     <div className="page-shell grid min-h-[calc(100vh-56px)] place-items-center py-10">
       <section className="w-full max-w-md rounded border border-base-300 bg-base-100 p-6 shadow-sm">
         <h1 className="text-2xl font-bold text-ink">Log in</h1>
+        <div className="mt-4 rounded border border-primary/25 bg-primary/5 p-3 text-sm">
+          <p className="font-semibold text-ink">Test account</p>
+          <p className="mt-1 text-base-content/70">
+            Email: test@test.com · Password: test
+          </p>
+        </div>
         {location.state?.message && (
           <div className="alert alert-success mt-4 rounded">
             <span>{location.state.message}</span>

@@ -21,7 +21,9 @@ export function AuthProvider({ children }) {
         return nextUser;
       },
       signup(credentials) {
-        signUp(credentials);
+        const nextUser = signUp(credentials);
+        setUser(nextUser);
+        return nextUser;
       },
       logout() {
         logOut();
