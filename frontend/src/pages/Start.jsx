@@ -26,13 +26,6 @@ export default function Start() {
             Sign up
             <ArrowRight size={18} />
           </Link>
-          <a
-            href="/listings?guest=1"
-            className="btn btn-ghost sm:col-span-2"
-          >
-            Skip login
-            <ArrowRight size={18} />
-          </a>
         </div>
       </section>
     </div>

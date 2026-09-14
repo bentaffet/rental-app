@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import { beforeEach, test } from "node:test";
 
 import {
-  continueAsGuest,
   getCurrentUser,
   logIn,
   logOut,
@@ -31,33 +30,22 @@ beforeEach(() => {
   globalThis.window = { localStorage: new MemoryStorage() };
 });
 
-test("continuing as a guest creates a session with onboarding skipped", () => {
-  const guest = continueAsGuest();
-
-  assert.equal(guest.email, "guest@roomup.local");
-  assert.deepEqual(guest.preferences, { skippedOnboarding: true });
-  assert.deepEqual(getCurrentUser(), guest);
-});
-
-test("guest access works when a sandbox blocks local storage", () => {
-  globalThis.window = {
-    localStorage: {
-      getItem() {
-        throw new DOMException("Blocked", "SecurityError");
+test("a legacy passwordless guest session cannot access the app", () => {
+  window.localStorage.setItem(
+    "roomup:users",
+    JSON.stringify([
+      {
+        email: "guest@roomup.local",
+        preferences: { skippedOnboarding: true },
       },
-      setItem() {
-        throw new DOMException("Blocked", "SecurityError");
-      },
-      removeItem() {
-        throw new DOMException("Blocked", "SecurityError");
-      },
-    },
-  };
+    ])
+  );
+  window.localStorage.setItem(
+    "roomup:session",
+    JSON.stringify({ email: "guest@roomup.local" })
+  );
 
-  const guest = continueAsGuest();
-
-  assert.equal(guest.email, "guest@roomup.local");
-  assert.deepEqual(getCurrentUser(), guest);
+  assert.equal(getCurrentUser(), null);
 });
 
 test("signup persists the account and starts a session", () => {

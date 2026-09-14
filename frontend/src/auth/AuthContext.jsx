@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import {
-  continueAsGuest,
   getCurrentUser,
   logIn,
   logOut,
@@ -9,13 +8,8 @@ import {
 } from "./authStorage.js";
 import { AuthContext } from "./authContextValue.js";
 
-function getInitialUser() {
-  const isGuestEntry = new URLSearchParams(window.location.search).get("guest") === "1";
-  return isGuestEntry ? continueAsGuest() : getCurrentUser();
-}
-
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(getInitialUser);
+  const [user, setUser] = useState(() => getCurrentUser());
 
   const value = useMemo(
     () => ({
@@ -28,11 +22,6 @@ export function AuthProvider({ children }) {
       },
       signup(credentials) {
         const nextUser = signUp(credentials);
-        setUser(nextUser);
-        return nextUser;
-      },
-      skipLogin() {
-        const nextUser = continueAsGuest();
         setUser(nextUser);
         return nextUser;
       },

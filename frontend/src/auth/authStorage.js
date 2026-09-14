@@ -1,6 +1,5 @@
 const USERS_KEY = "roomup:users";
 const SESSION_KEY = "roomup:session";
-const GUEST_EMAIL = "guest@roomup.local";
 const memoryStorage = new Map();
 
 function readJson(key, fallback) {
@@ -48,6 +47,8 @@ export function getCurrentUser() {
 
   const users = readUsers();
   const user = users.find((candidate) => candidate.email === session.email);
+  if (!user?.password) return null;
+
   return toPublicUser(user);
 }
 
@@ -97,24 +98,6 @@ export function logOut() {
   } catch {
     // The in-memory session was already cleared.
   }
-}
-
-export function continueAsGuest() {
-  const users = readUsers();
-  let guest = users.find((user) => user.email === GUEST_EMAIL);
-
-  if (!guest) {
-    guest = {
-      email: GUEST_EMAIL,
-      preferences: { skippedOnboarding: true },
-      createdAt: new Date().toISOString(),
-    };
-    users.push(guest);
-    writeJson(USERS_KEY, users);
-  }
-
-  writeJson(SESSION_KEY, { email: GUEST_EMAIL });
-  return toPublicUser(guest);
 }
 
 export function savePreferences(preferences) {

@@ -66,19 +66,6 @@ export default function Login() {
           </button>
         </form>
 
-        <div className="my-5 flex items-center gap-3 text-xs text-base-content/45">
-          <span className="h-px flex-1 bg-base-300" />
-          <span>or</span>
-          <span className="h-px flex-1 bg-base-300" />
-        </div>
-
-        <a
-          href="/listings?guest=1"
-          className="btn btn-ghost w-full"
-        >
-          Skip login
-        </a>
-
         <p className="mt-5 text-sm text-base-content/70">
           New here?{" "}
           <Link className="font-semibold text-primary" to="/signup">
