@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { beforeEach, test } from "node:test";
 
 import {
+  continueAsGuest,
   getCurrentUser,
   logIn,
   logOut,
@@ -30,27 +31,12 @@ beforeEach(() => {
   globalThis.window = { localStorage: new MemoryStorage() };
 });
 
-test("the built-in test account can log in", () => {
-  assert.deepEqual(logIn({ email: "test@test.com", password: "test" }), {
-    email: "test@test.com",
-    preferences: null,
-  });
-  assert.deepEqual(getCurrentUser(), {
-    email: "test@test.com",
-    preferences: null,
-  });
-});
+test("continuing as a guest creates a session with onboarding skipped", () => {
+  const guest = continueAsGuest();
 
-test("the built-in credentials replace stale test-account credentials", () => {
-  window.localStorage.setItem(
-    "roomup:users",
-    JSON.stringify([{ email: "TEST@test.com", password: "old-password" }])
-  );
-
-  assert.deepEqual(logIn({ email: "test@test.com", password: "test" }), {
-    email: "test@test.com",
-    preferences: null,
-  });
+  assert.equal(guest.email, "guest@roomup.local");
+  assert.deepEqual(guest.preferences, { skippedOnboarding: true });
+  assert.deepEqual(getCurrentUser(), guest);
 });
 
 test("signup persists the account and starts a session", () => {

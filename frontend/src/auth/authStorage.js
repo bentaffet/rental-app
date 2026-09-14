@@ -1,11 +1,6 @@
 const USERS_KEY = "roomup:users";
 const SESSION_KEY = "roomup:session";
-const TEST_ACCOUNT = {
-  email: "test@test.com",
-  password: "test",
-  preferences: null,
-  createdAt: "2026-01-01T00:00:00.000Z",
-};
+const GUEST_EMAIL = "guest@roomup.local";
 
 function readJson(key, fallback) {
   try {
@@ -26,33 +21,7 @@ function normalizeEmail(email) {
 
 function readUsers() {
   const storedUsers = readJson(USERS_KEY, []);
-  const users = Array.isArray(storedUsers) ? storedUsers : [];
-  const testAccountIndex = users.findIndex(
-    (user) => normalizeEmail(user.email || "") === TEST_ACCOUNT.email
-  );
-
-  if (testAccountIndex === -1) {
-    const nextUsers = [...users, TEST_ACCOUNT];
-    writeJson(USERS_KEY, nextUsers);
-    return nextUsers;
-  }
-
-  const storedTestAccount = users[testAccountIndex];
-  if (
-    storedTestAccount.email === TEST_ACCOUNT.email &&
-    storedTestAccount.password === TEST_ACCOUNT.password
-  ) {
-    return users;
-  }
-
-  const nextUsers = [...users];
-  nextUsers[testAccountIndex] = {
-    ...storedTestAccount,
-    email: TEST_ACCOUNT.email,
-    password: TEST_ACCOUNT.password,
-  };
-  writeJson(USERS_KEY, nextUsers);
-  return nextUsers;
+  return Array.isArray(storedUsers) ? storedUsers : [];
 }
 
 function toPublicUser(user) {
@@ -113,6 +82,24 @@ export function logIn({ email, password }) {
 
 export function logOut() {
   window.localStorage.removeItem(SESSION_KEY);
+}
+
+export function continueAsGuest() {
+  const users = readUsers();
+  let guest = users.find((user) => user.email === GUEST_EMAIL);
+
+  if (!guest) {
+    guest = {
+      email: GUEST_EMAIL,
+      preferences: { skippedOnboarding: true },
+      createdAt: new Date().toISOString(),
+    };
+    users.push(guest);
+    writeJson(USERS_KEY, users);
+  }
+
+  writeJson(SESSION_KEY, { email: GUEST_EMAIL });
+  return toPublicUser(guest);
 }
 
 export function savePreferences(preferences) {

@@ -1,7 +1,16 @@
 import { ArrowRight, Home, LogIn } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../auth/useAuth.js";
 
 export default function Start() {
+  const { skipLogin } = useAuth();
+  const navigate = useNavigate();
+
+  function continueWithoutAccount() {
+    skipLogin();
+    navigate("/listings", { replace: true });
+  }
+
   return (
     <div className="page-shell grid min-h-[calc(100vh-56px)] place-items-center py-10">
       <section className="w-full max-w-xl rounded border border-base-300 bg-base-100 p-6 shadow-sm sm:p-8">
@@ -26,6 +35,14 @@ export default function Start() {
             Sign up
             <ArrowRight size={18} />
           </Link>
+          <button
+            type="button"
+            className="btn btn-ghost sm:col-span-2"
+            onClick={continueWithoutAccount}
+          >
+            Skip login
+            <ArrowRight size={18} />
+          </button>
         </div>
       </section>
     </div>

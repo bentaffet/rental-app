@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import {
+  continueAsGuest,
   getCurrentUser,
   logIn,
   logOut,
@@ -22,6 +23,11 @@ export function AuthProvider({ children }) {
       },
       signup(credentials) {
         const nextUser = signUp(credentials);
+        setUser(nextUser);
+        return nextUser;
+      },
+      skipLogin() {
+        const nextUser = continueAsGuest();
         setUser(nextUser);
         return nextUser;
       },
