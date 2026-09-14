@@ -1,18 +1,27 @@
 const USERS_KEY = "roomup:users";
 const SESSION_KEY = "roomup:session";
 const GUEST_EMAIL = "guest@roomup.local";
+const memoryStorage = new Map();
 
 function readJson(key, fallback) {
   try {
     const value = window.localStorage.getItem(key);
     return value ? JSON.parse(value) : fallback;
   } catch {
-    return fallback;
+    const value = memoryStorage.get(key);
+    return value ? JSON.parse(value) : fallback;
   }
 }
 
 function writeJson(key, value) {
-  window.localStorage.setItem(key, JSON.stringify(value));
+  const serializedValue = JSON.stringify(value);
+  memoryStorage.set(key, serializedValue);
+
+  try {
+    window.localStorage.setItem(key, serializedValue);
+  } catch {
+    // Sandboxed previews can deny localStorage. Keep the session in memory instead.
+  }
 }
 
 function normalizeEmail(email) {
@@ -81,7 +90,13 @@ export function logIn({ email, password }) {
 }
 
 export function logOut() {
-  window.localStorage.removeItem(SESSION_KEY);
+  memoryStorage.delete(SESSION_KEY);
+
+  try {
+    window.localStorage.removeItem(SESSION_KEY);
+  } catch {
+    // The in-memory session was already cleared.
+  }
 }
 
 export function continueAsGuest() {

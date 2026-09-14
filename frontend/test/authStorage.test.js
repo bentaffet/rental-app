@@ -39,6 +39,27 @@ test("continuing as a guest creates a session with onboarding skipped", () => {
   assert.deepEqual(getCurrentUser(), guest);
 });
 
+test("guest access works when a sandbox blocks local storage", () => {
+  globalThis.window = {
+    localStorage: {
+      getItem() {
+        throw new DOMException("Blocked", "SecurityError");
+      },
+      setItem() {
+        throw new DOMException("Blocked", "SecurityError");
+      },
+      removeItem() {
+        throw new DOMException("Blocked", "SecurityError");
+      },
+    },
+  };
+
+  const guest = continueAsGuest();
+
+  assert.equal(guest.email, "guest@roomup.local");
+  assert.deepEqual(getCurrentUser(), guest);
+});
+
 test("signup persists the account and starts a session", () => {
   const user = signUp({ email: " New.User@Example.com ", password: "secret1" });
 
